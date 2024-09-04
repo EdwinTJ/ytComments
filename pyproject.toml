@@ -8,6 +8,7 @@ authors = ["EdwinTJ <edwin16x@gmail.com>"]
 python = "^3.10"
 google-api-python-client = "^2.143.0"
 python-dotenv = "^1.0.1"
+openai = "^1.43.0"
 
 [tool.poetry.dev-dependencies]
 
