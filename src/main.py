@@ -10,10 +10,6 @@ OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
 YOUTUBE_API_SERVICE_NAME = os.environ['YOUTUBE_API_SERVICE_NAME']
 YOUTUBE_API_VERSION = os.environ['YOUTUBE_API_VERSION']
 
-# Get the video ID and prompt from the user
-video_id = input("Enter the video ID: ")
-prompt = input("Enter the prompt: ")
-
 def get_video_comments(video_id):
     youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, developerKey=YOUTUBE_API_KEY)
 
@@ -55,12 +51,55 @@ def summarize_comments(comments, prompt):
     summary = response.choices[0].message.content
     return summary
 
-if __name__ == '__main__':
-    comments = get_video_comments(video_id)
 
-    if comments:
-        summary = summarize_comments(comments, prompt)
-        print("Summary of Comments:")
-        print(summary)
+def get_channel_videos(channel_id):
+    youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, developerKey=YOUTUBE_API_KEY)
+
+    # Fetch the videos from the channel
+    response = youtube.search().list(
+        channelId=channel_id,
+        part='id,snippet',
+        maxResults=10,
+        order='date'
+    ).execute()
+
+    # 
+    videos =[]
+    for item in response['items']:
+        video_data = {
+            'title': item['snippet']['title'],
+            'videoId': item['id']['videoId'],
+            'thumbnail': item['snippet']['thumbnails']['high']['url'],
+            'description': item['snippet']['description']
+        }
+        videos.append(video_data)
+
+    return videos
+
+if __name__ == '__main__':
+    # Get the video ID and prompt from the user
+    print("Welcome to the YouTube Comment Summarizer!")
+    print("Option 1: Summarize comments from a video")
+    print("Option 2: Get videos from a channel")
+    option = input("Enter the option: ")
+    if option == '1':
+        video_id = input("Enter the video ID: ")
+        prompt = input("Enter the prompt: ")
+        comments = get_video_comments(video_id)
+
+        if comments:
+            summary = summarize_comments(comments, prompt)
+            print("Summary of Comments:")
+            print(summary)
+        else:
+            print('No comments found.')
     else:
-        print('No comments found.')
+        channel_id = input("Enter the channel ID: ")
+        videos = get_channel_videos(channel_id)
+        for video in videos:
+            print(f"Title: {video['title']}")
+            print(f"Video ID: {video['videoId']}")
+            print(f"Thumbnail: {video['thumbnail']}")
+            print(f"Description: {video['description']}")
+            print()
+   
