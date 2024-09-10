@@ -28,3 +28,5 @@ curl -X 'POST' \
  -d '{
 "channel_id": "UCSUwTmHIP_rlCTZeQW2oiEg"
 }'
+
+uvicorn main:app --reload

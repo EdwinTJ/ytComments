@@ -4,6 +4,7 @@ from openai import OpenAI
 import os
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 # Load the environment variables
 load_dotenv() 
@@ -13,6 +14,19 @@ YOUTUBE_API_SERVICE_NAME = os.environ['YOUTUBE_API_SERVICE_NAME']
 YOUTUBE_API_VERSION = os.environ['YOUTUBE_API_VERSION']
 
 app = FastAPI()
+
+origins = [
+    "http://localhost:5173",
+    "http://localhost",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class CommentSummarizeRequest(BaseModel):
     video_id: str
@@ -70,7 +84,7 @@ def get_channel_videos(channel_id):
     response = youtube.search().list(
         channelId=channel_id,
         part='id,snippet',
-        maxResults=10,
+        maxResults=15,
         order='date'
     ).execute()
 
@@ -91,7 +105,7 @@ def get_channel_videos(channel_id):
 
 # 1. Summarize video comments
 @app.post("/summarize_comments/")
-def summarize_video_comments(request: CommentSummarizeRequest):
+async def summarize_video_comments(request: CommentSummarizeRequest):
     comments = get_video_comments(request.video_id)
     
     if not comments:
@@ -102,7 +116,7 @@ def summarize_video_comments(request: CommentSummarizeRequest):
 
 # 2. Get channel videos
 @app.post("/channel_videos/")
-def get_videos_from_channel(request: ChannelVideosRequest):
+async def get_videos_from_channel(request: ChannelVideosRequest):
     videos = get_channel_videos(request.channel_id)
     
     if not videos:
@@ -111,5 +125,5 @@ def get_videos_from_channel(request: ChannelVideosRequest):
     return {"videos": videos}
 
 @app.get("/")
-def read_root():
+async def read_root():
     return {"Hello": "World"}
