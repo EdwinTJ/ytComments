@@ -8,11 +8,11 @@ const router = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: <Dashboard />,
+        element: <h1>Hello Video Card</h1>,
       },
       {
         path: "/videos",
-        element: <h1>Hello Video Card</h1>,
+        element: <Dashboard />,
       },
     ],
   },
