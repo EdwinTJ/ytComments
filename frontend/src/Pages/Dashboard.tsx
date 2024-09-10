@@ -26,7 +26,7 @@ export default function Dashboard() {
     const fetchVideos = async () => {
       try {
         const response = await fetch("http://127.0.0.1:8000/channel_videos/", {
-          method: "POST", // POST request
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
@@ -56,31 +56,32 @@ export default function Dashboard() {
   };
 
   return (
-    <section className="flex-1 p-8">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+    <section className="flex-1 p-8 overflow-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {currentVideos.map((video, index) => (
-          <Card key={index} className="max-w-md mx-auto">
-            <CardHeader>
+          <Card
+            key={index}
+            className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg mx-auto overflow-hidden"
+          >
+            <CardHeader className="relative">
               <img
                 src={video.thumbnail}
                 alt={video.title}
-                width={400}
-                height={200}
-                className="rounded-lg object-cover"
+                className="w-full h-32 sm:h-48 md:h-56 lg:h-64 object-cover rounded-t-lg"
               />
             </CardHeader>
-            <CardContent>
-              <CardTitle className="text-xl font-bold text-gray-800 mb-2">
+            <CardContent className="flex flex-col p-4">
+              <CardTitle className="text-lg text-wrap font-bold text-gray-800 mb-2 truncate">
                 {video.title}
               </CardTitle>
-              <CardDescription className="text-gray-600">
+              <CardDescription className="text-sm text-wrap text-gray-600 truncate">
                 {video.description || "No description available."}
               </CardDescription>
             </CardContent>
-            <CardFooter className="flex justify-between">
+            <CardFooter className="flex flex-col sm:flex-row justify-between p-4 space-y-2 sm:space-y-0 sm:space-x-2">
               <Button
                 variant="outline"
-                className="bg-white text-gray-600 border-gray-300 hover:bg-gray-100"
+                className="bg-white text-gray-600 border-gray-300 hover:bg-gray-100 flex-1"
                 onClick={() =>
                   window.open(
                     `https://www.youtube.com/watch?v=${video.videoId}`,
@@ -90,7 +91,7 @@ export default function Dashboard() {
               >
                 Watch Video
               </Button>
-              <Button className="bg-blue-500 text-white hover:bg-blue-600">
+              <Button className="bg-blue-500 text-white hover:bg-blue-600 flex-1">
                 Get AI Summary
               </Button>
             </CardFooter>
