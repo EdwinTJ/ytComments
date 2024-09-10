@@ -3,12 +3,23 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import os
 
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 # Load the environment variables
 load_dotenv() 
 YOUTUBE_API_KEY = os.environ['YOUTUBE_API_KEY']
 OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
 YOUTUBE_API_SERVICE_NAME = os.environ['YOUTUBE_API_SERVICE_NAME']
 YOUTUBE_API_VERSION = os.environ['YOUTUBE_API_VERSION']
+
+app = FastAPI()
+
+class CommentSummarizeRequest(BaseModel):
+    video_id: str
+    prompt: str
+
+class ChannelVideosRequest(BaseModel):
+    channel_id: str
 
 def get_video_comments(video_id):
     youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, developerKey=YOUTUBE_API_KEY)
@@ -76,30 +87,29 @@ def get_channel_videos(channel_id):
 
     return videos
 
-if __name__ == '__main__':
-    # Get the video ID and prompt from the user
-    print("Welcome to the YouTube Comment Summarizer!")
-    print("Option 1: Summarize comments from a video")
-    print("Option 2: Get videos from a channel")
-    option = input("Enter the option: ")
-    if option == '1':
-        video_id = input("Enter the video ID: ")
-        prompt = input("Enter the prompt: ")
-        comments = get_video_comments(video_id)
+# API Endpoints
 
-        if comments:
-            summary = summarize_comments(comments, prompt)
-            print("Summary of Comments:")
-            print(summary)
-        else:
-            print('No comments found.')
-    else:
-        channel_id = input("Enter the channel ID: ")
-        videos = get_channel_videos(channel_id)
-        for video in videos:
-            print(f"Title: {video['title']}")
-            print(f"Video ID: {video['videoId']}")
-            print(f"Thumbnail: {video['thumbnail']}")
-            print(f"Description: {video['description']}")
-            print()
-   
+# 1. Summarize video comments
+@app.post("/summarize_comments/")
+def summarize_video_comments(request: CommentSummarizeRequest):
+    comments = get_video_comments(request.video_id)
+    
+    if not comments:
+        raise HTTPException(status_code=404, detail="No comments found")
+    
+    summary = summarize_comments(comments, request.prompt)
+    return {"summary": summary}
+
+# 2. Get channel videos
+@app.post("/channel_videos/")
+def get_videos_from_channel(request: ChannelVideosRequest):
+    videos = get_channel_videos(request.channel_id)
+    
+    if not videos:
+        raise HTTPException(status_code=404, detail="No videos found")
+    
+    return {"videos": videos}
+
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
