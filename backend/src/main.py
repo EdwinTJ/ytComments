@@ -35,6 +35,7 @@ app.add_middleware(
 class UserCreate(BaseModel):
     name: str
     email: str
+    password: str
 
 class ChannelCreate(BaseModel):
     channel_id: str
@@ -78,7 +79,7 @@ async def get_videos_from_channel(request: ChannelVideosRequest):
 # 3. User CRUD
 @app.post("/users/")
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    new_user = User(name=user.name, email=user.email)
+    new_user = User(name=user.name, email=user.email,password=user.password)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)

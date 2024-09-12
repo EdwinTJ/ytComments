@@ -15,7 +15,7 @@ uvicorn main:app --reload
 
 curl -X POST "http://127.0.0.1:8000/users/" \
  -H "Content-Type: application/json" \
- -d '{"name": "John Doe", "email": "johndoe@example.com"}'
+ -d '{"name": "John Doe1", "email": "johndoe1@example.com","password":"pass123"}'
 
 curl -X 'POST' \
  'http://127.0.0.1:8000/summarize_comments/' \
