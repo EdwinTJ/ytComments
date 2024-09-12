@@ -13,10 +13,68 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+# JWT PASSWORD HASHING
+from datetime import datetime, timedelta
+from typing import Optional
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+
 # Environment variables
 YOUTUBE_API_KEY = os.environ['YOUTUBE_API_KEY']
 OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
+SECRET_KEY = os.environ['SECRET_KEY']
+ALGORITHM = os.environ['ALGORITHM']
 
+### PWD HASING HANDLING
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+# Password hashing context
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Utility functions for password hashing
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+# Utility functions for JWT token handling
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def verify_token(token: str) -> dict:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    email: str
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    payload = verify_token(token)
+    user_email = payload.get("email")
+    if user_email is None:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    user = db.query(User).filter(User.email == user_email).first()
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
+###
 app = FastAPI()
 
 origins = [
@@ -57,7 +115,7 @@ async def read_root():
 
 # 1. Summarize video comments
 @app.post("/summarize_comments/")
-async def summarize_video_comments(request: CommentSummarizeRequest):
+async def summarize_video_comments(request: CommentSummarizeRequest, user: User = Depends(get_current_user)):
     comments = get_video_comments(request.video_id)
     
     if not comments:
@@ -68,7 +126,7 @@ async def summarize_video_comments(request: CommentSummarizeRequest):
 
 # 2. Get channel videos
 @app.post("/channel_videos/")
-async def get_videos_from_channel(request: ChannelVideosRequest):
+async def get_videos_from_channel(request: ChannelVideosRequest, user: User = Depends(get_current_user)):
     videos = get_channel_videos(request.channel_id)
     
     if not videos:
@@ -79,7 +137,8 @@ async def get_videos_from_channel(request: ChannelVideosRequest):
 # 3. User CRUD
 @app.post("/users/")
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    new_user = User(name=user.name, email=user.email,password=user.password)
+    hashed_password = hash_password(user.password)
+    new_user = User(name=user.name, email=user.email, hashed_password=hashed_password)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -103,3 +162,20 @@ def add_channel(user_id: int, channel: ChannelCreate, db: Session = Depends(get_
     db.commit()
     db.refresh(new_channel)
     return new_channel
+
+# 6. Token generation
+@app.post("/token/", response_model=Token)
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == form_data.username).first()
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(data={"email": user.email}, expires_delta=access_token_expires)
+    return {"access_token": access_token, "token_type": "bearer"}
+
+# 7. Logout
+@app.post("/logout/")
+def logout(token: str = Depends(OAuth2PasswordBearer(tokenUrl="token"))):
+    # Simulate token blacklist (Not ideal for production)
+    # In practice, you should handle token invalidation on the client side
+    return {"message": "Successfully logged out"}

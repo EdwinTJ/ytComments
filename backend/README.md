@@ -33,3 +33,18 @@ curl -X 'POST' \
 }'
 
 curl -X GET "http://127.0.0.1:8000/users/1"
+
+Test Login:
+curl -X POST "http://127.0.0.1:8000/token/" \
+-H "Content-Type: application/x-www-form-urlencoded" \
+-d "username=johndoe1@example.com&password=pass123"
+
+Test Logout
+curl -X POST "http://127.0.0.1:8000/logout/" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImpvaG5kb2UxQGV4YW1wbGUuY29tIiwiZXhwIjoxNzI2MTE1Mjc0fQ.iIa5yw4wNfLKcaxx7zqsvq8bKfcO1qn6FMC4XMTGOIY"
+
+Test Acces Protection
+curl -X POST "http://127.0.0.1:8000/summarize_comments/" \
+-H "Authorization: Bearer sdafsdfdsfasdfcvzxcv" \
+-H "Content-Type: application/json" \
+-d '{"video_id": "some_video_id", "prompt": "Summarize this video"}'
