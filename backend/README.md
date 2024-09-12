@@ -9,10 +9,13 @@ Video ID: RHqS5kXSmGg
 Thumbnail: https://i.ytimg.com/vi/RHqS5kXSmGg/hqdefault.jpg
 Description: Esta página te explica Patrones de Diseño en Programación, totalmente en Español! JavaScript, Python, PHP, Golang o ...
 
-Title: Recurso para entender cualquier código en programación
-Video ID: 9eABNJsb3Wk
-Thumbnail: https://i.ytimg.com/vi/9eABNJsb3Wk/hqdefault.jpg
-Description: Si estás aprendiendo a programar, este recurso es esencial! Compatible con código de Python, JavaScript, C, C++ y Java.
+uvicorn main:app --reload
+
+## CURL
+
+curl -X POST "http://127.0.0.1:8000/users/" \
+ -H "Content-Type: application/json" \
+ -d '{"name": "John Doe", "email": "johndoe@example.com"}'
 
 curl -X 'POST' \
  'http://127.0.0.1:8000/summarize_comments/' \
@@ -29,4 +32,4 @@ curl -X 'POST' \
 "channel_id": "UCSUwTmHIP_rlCTZeQW2oiEg"
 }'
 
-uvicorn main:app --reload
+curl -X GET "http://127.0.0.1:8000/users/1"

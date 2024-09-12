@@ -1,17 +1,21 @@
-from googleapiclient.discovery import build
-from dotenv import load_dotenv
-from openai import OpenAI
-import os
-
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException,Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-# Load the environment variables
-load_dotenv() 
+
+from youtube import get_video_comments, get_channel_videos
+from open_ai import summarize_comments
+
+from sqlalchemy.orm import Session
+from database.dependencies import get_db
+from database.models import User,ChannelInfo
+
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+# Environment variables
 YOUTUBE_API_KEY = os.environ['YOUTUBE_API_KEY']
 OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
-YOUTUBE_API_SERVICE_NAME = os.environ['YOUTUBE_API_SERVICE_NAME']
-YOUTUBE_API_VERSION = os.environ['YOUTUBE_API_VERSION']
 
 app = FastAPI()
 
@@ -28,6 +32,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+class UserCreate(BaseModel):
+    name: str
+    email: str
+
+class ChannelCreate(BaseModel):
+    channel_id: str
+    user_id: int
+
 class CommentSummarizeRequest(BaseModel):
     video_id: str
     prompt: str
@@ -35,73 +47,12 @@ class CommentSummarizeRequest(BaseModel):
 class ChannelVideosRequest(BaseModel):
     channel_id: str
 
-def get_video_comments(video_id):
-    youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, developerKey=YOUTUBE_API_KEY)
-
-    # Get the comments
-    response = youtube.commentThreads().list(
-    part="snippet",
-    videoId=video_id,
-    maxResults=40  # Adjust as needed
-    ).execute()
-
-    # Extract the comments, and store them in a list
-    comments = []
-    for item in response['items']:
-        comment = item['snippet']['topLevelComment']['snippet']['textDisplay']
-        comments.append(comment)
-
-    return comments
-
-
-def summarize_comments(comments, prompt):
-    client = OpenAI(api_key=OPENAI_API_KEY)
-    
-    # Join the comments into a single string
-    comments_text = "\n".join(comments)
-
-    new_prompt = f"{prompt}\n\nComments:\n{comments_text}"
-
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": new_prompt},
-        ],
-        #max_tokens=200,Adjust based on the length of summary you want
-        temperature=1.3,# Adjust for creativity in the response
-        
-    )
-    # Generate the summary
-    summary = response.choices[0].message.content
-    return summary
-
-
-def get_channel_videos(channel_id):
-    youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, developerKey=YOUTUBE_API_KEY)
-
-    # Fetch the videos from the channel
-    response = youtube.search().list(
-        channelId=channel_id,
-        part='id,snippet',
-        maxResults=15,
-        order='date'
-    ).execute()
-
-    # 
-    videos =[]
-    for item in response['items']:
-        video_data = {
-            'title': item['snippet']['title'],
-            'videoId': item['id']['videoId'],
-            'thumbnail': item['snippet']['thumbnails']['high']['url'],
-            'description': item['snippet']['description']
-        }
-        videos.append(video_data)
-
-    return videos
-
 # API Endpoints
+
+# 0. Root endpoint
+@app.get("/")
+async def read_root():
+    return {"Hello": "World"}
 
 # 1. Summarize video comments
 @app.post("/summarize_comments/")
@@ -124,6 +75,30 @@ async def get_videos_from_channel(request: ChannelVideosRequest):
     
     return {"videos": videos}
 
-@app.get("/")
-async def read_root():
-    return {"Hello": "World"}
+# 3. User CRUD
+@app.post("/users/")
+def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    new_user = User(name=user.name, email=user.email)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
+
+# 4. Read user
+@app.get("/users/{user_id}")
+def read_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    return user
+
+# 5. Create channel
+@app.post("/users/{user_id}/channels/")
+def add_channel(user_id: int, channel: ChannelCreate, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return {"error": "User not found"}
+
+    new_channel = ChannelInfo(channel_id=channel.channel_id, owner=user)
+    db.add(new_channel)
+    db.commit()
+    db.refresh(new_channel)
+    return new_channel
