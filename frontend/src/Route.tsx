@@ -1,6 +1,8 @@
 import { createBrowserRouter } from "react-router-dom";
 import App from "./App";
 import Dashboard from "./Pages/Dashboard";
+import PrivateRoute from "./components/PrivateRoute";
+import AuthOptions from "./components/AuthOptions";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -8,11 +10,15 @@ const router = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: <h1>Hello Video Card</h1>,
+        element: <AuthOptions />,
       },
       {
         path: "/videos",
-        element: <Dashboard />,
+        element: (
+          <PrivateRoute>
+            <Dashboard />
+          </PrivateRoute>
+        ),
       },
     ],
   },
