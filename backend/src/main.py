@@ -114,6 +114,17 @@ class ChannelVideosRequest(BaseModel):
 async def read_root():
     return {"Hello": "World"}
 
+# Get Current User
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    payload = verify_token(token)
+    user_id = payload.get("user_id")
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
+
 # 1. Summarize video comments
 @app.post("/summarize_comments/")
 async def summarize_video_comments(request: CommentSummarizeRequest, user: User = Depends(get_current_user)):
@@ -185,13 +196,4 @@ def logout(token: str = Depends(OAuth2PasswordBearer(tokenUrl="token"))):
     # In practice, you should handle token invalidation on the client side
     return {"message": "Successfully logged out"}
 
-#8. Get Current User
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    payload = verify_token(token)
-    user_id = payload.get("user_id")
-    if user_id is None:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    user = db.query(User).filter(User.id == user_id).first()
-    if user is None:
-        raise HTTPException(status_code=401, detail="User not found")
-    return user
+
