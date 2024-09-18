@@ -98,7 +98,6 @@ class UserCreate(BaseModel):
 
 class ChannelCreate(BaseModel):
     channel_id: str
-    user_id: int
 
 class CommentSummarizeRequest(BaseModel):
     video_id: str
@@ -177,7 +176,7 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
     return user
 
 ######## Channel ######
-# 1. Create Channel (already exists, slightly modified for better conventions)
+# 1. Create Channel
 @app.post("/users/{user_id}/channels/", response_model=ChannelCreate)
 def create_channel(user_id: int, channel: ChannelCreate, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()

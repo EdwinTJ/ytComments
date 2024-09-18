@@ -28,6 +28,7 @@ interface Channel {
   channel_id: string;
 }
 interface User {
+  id: string;
   name: string;
   email: string;
   channels: string[];
@@ -120,6 +121,7 @@ export default function Account() {
   }, []);
 
   // Function to handle adding a channel
+  // Function to handle adding a channel
   const addChannel = async (e: React.FormEvent) => {
     e.preventDefault(); // Prevent default form submission
     const token = localStorage.getItem("token");
@@ -141,25 +143,65 @@ export default function Account() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ channel_id: newChannelId }),
+          body: JSON.stringify({ channel_id: newChannelId }), // Send channel_id in the body
         }
       );
 
       if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
+        if (response.status === 404) {
+          setError("User not found"); // Handling 404 error for user not found
+        } else {
+          throw new Error(`Error: ${response.status}`); // Other errors
+        }
+      } else {
+        const newChannel = await response.json(); // Parse new channel data from the response
+        setChannels([...channels, newChannel]); // Add the new channel to the existing list
+        setNewChannelId(""); // Reset the input field
+        setIsDialogOpen(false); // Close the dialog
       }
-
-      const newChannel = await response.json();
-      setChannels([...channels, newChannel]); // Update the channel list
-      setNewChannelId(""); // Reset the input field
-      setIsDialogOpen(false); // Close the dialog
     } catch (error) {
       console.error("Failed to add channel:", error);
+      setError("Failed to add channel.");
     }
   };
 
-  const deleteChannel = (id: string) => {
-    console.log(`delete ${id}`);
+  const deleteChannel = async (channelId: string) => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      console.error("No token found");
+      return;
+    }
+
+    const decoded: DecodedToken = jwtDecode<DecodedToken>(token);
+    const userId = decoded.user_id;
+
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/users/${userId}/channels/${channelId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          setError("Channel not found"); // Handling channel not found error
+        } else {
+          throw new Error(`Error: ${response.status}`); // Handling other errors
+        }
+      } else {
+        // Remove the deleted channel from the state
+        setChannels(channels.filter((channel) => channel.id !== channelId));
+      }
+    } catch (error) {
+      console.error("Failed to delete channel:", error);
+      setError("Failed to delete channel.");
+    }
   };
 
   if (isLoading) {
@@ -214,7 +256,7 @@ export default function Account() {
                 <form onSubmit={addChannel} className="space-y-4">
                   <div>
                     <Label htmlFor="userId">User ID</Label>
-                    <Input id="userId" value={user.email} disabled />
+                    <Input id="userId" value={user.id} disabled />
                   </div>
                   <div>
                     <Label htmlFor="channelId">Channel ID</Label>
@@ -256,7 +298,7 @@ export default function Account() {
                           variant="destructive"
                           size="sm"
                           className="bg-red-500 hover:bg-red-600 text-white"
-                          onClick={() => deleteChannel(channel.id)}
+                          onClick={() => deleteChannel(channel.id)} // Pass channel id to deleteChannel
                         >
                           <TrashIcon className="h-4 w-4" />
                           <span className="sr-only">Delete channel</span>
