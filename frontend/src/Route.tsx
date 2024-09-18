@@ -3,6 +3,7 @@ import App from "./App";
 import Dashboard from "./Pages/Dashboard";
 import PrivateRoute from "./components/PrivateRoute";
 import AuthOptions from "./components/AuthOptions";
+import Account from "./Pages/Account";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -19,6 +20,10 @@ const router = createBrowserRouter([
             <Dashboard />
           </PrivateRoute>
         ),
+      },
+      {
+        path: "/account",
+        element: <Account />,
       },
     ],
   },

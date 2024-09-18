@@ -32,7 +32,7 @@ export default function AuthOptions() {
       const data = await response.json();
       if (response.ok) {
         localStorage.setItem("token", data.access_token);
-        navigate("/videos"); // Redirect to the dashboard
+        navigate("/account"); // Redirect to the dashboard
       } else {
         setError(data.detail || "Login failed");
       }
