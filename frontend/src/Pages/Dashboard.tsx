@@ -25,10 +25,12 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchVideos = async () => {
       try {
+        const token = localStorage.getItem("token");
         const response = await fetch("http://127.0.0.1:8000/channel_videos/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             channel_id: "UCSUwTmHIP_rlCTZeQW2oiEg",
@@ -36,7 +38,11 @@ export default function Dashboard() {
         });
 
         const data = await response.json();
-        setVideos(data.videos);
+        if (response.ok) {
+          setVideos(data.videos);
+        } else {
+          console.error("Failed to fetch videos:", data.detail);
+        }
       } catch (error) {
         console.error("Error fetching videos:", error);
       }
