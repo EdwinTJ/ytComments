@@ -4,6 +4,7 @@ import Dashboard from "./Pages/Dashboard";
 import PrivateRoute from "./components/PrivateRoute";
 import AuthOptions from "./components/AuthOptions";
 import Account from "./Pages/Account";
+import Home from "./Pages/Home";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -12,6 +13,14 @@ const router = createBrowserRouter([
       {
         path: "/",
         element: <AuthOptions />,
+      },
+      {
+        path: "/home",
+        element: (
+          <PrivateRoute>
+            <Home />
+          </PrivateRoute>
+        ),
       },
       {
         path: "/videos",
