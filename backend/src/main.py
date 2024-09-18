@@ -39,6 +39,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 # Utility functions for JWT token handling
+
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
     if expires_delta:
@@ -61,7 +62,7 @@ class Token(BaseModel):
     token_type: str
 
 class TokenData(BaseModel):
-    email: str
+    user_id: int
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -169,8 +170,12 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     user = db.query(User).filter(User.email == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(data={"email": user.email}, expires_delta=access_token_expires)
+    
+    # Send user info: user.id
+    access_token = create_access_token(data={"user_id": user.id}, expires_delta=access_token_expires)
+    
     return {"access_token": access_token, "token_type": "bearer"}
 
 # 7. Logout
@@ -179,3 +184,14 @@ def logout(token: str = Depends(OAuth2PasswordBearer(tokenUrl="token"))):
     # Simulate token blacklist (Not ideal for production)
     # In practice, you should handle token invalidation on the client side
     return {"message": "Successfully logged out"}
+
+#8. Get Current User
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    payload = verify_token(token)
+    user_id = payload.get("user_id")
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
