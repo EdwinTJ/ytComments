@@ -8,8 +8,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { jwtDecode } from "jwt-decode";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@radix-ui/react-label";
 import { PlusIcon, TrashIcon } from "lucide-react";
+import { jwtDecode } from "jwt-decode";
 
 interface DecodedToken {
   user_id: string;
@@ -21,7 +30,7 @@ interface Channel {
 interface User {
   name: string;
   email: string;
-  channels: string[]; // Make sure to update this to match your API response
+  channels: string[];
 }
 
 export default function Account() {
@@ -29,6 +38,8 @@ export default function Account() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [error, setError] = useState<string | null>(null); // Error state
+  const [newChannelId, setNewChannelId] = useState<string>(""); // State for new channel ID
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false); // Dialog state
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -82,10 +93,7 @@ export default function Account() {
             }
           );
 
-          // Read the response body only once
           const responseBody = await response.text(); // Read as text first
-          console.log(responseBody);
-
           if (response.status === 404) {
             setError("No channels found for this user.");
             setChannels([]); // Clear channels
@@ -96,7 +104,6 @@ export default function Account() {
             throw new Error(`Error: ${response.status}`);
           }
 
-          // Parse JSON from the response text
           const data = JSON.parse(responseBody);
           setChannels(data); // Set channels data
         } catch (error) {
@@ -112,8 +119,43 @@ export default function Account() {
     fetchUserChannels();
   }, []);
 
-  const addChannel = () => {
-    console.log("Add");
+  // Function to handle adding a channel
+  const addChannel = async (e: React.FormEvent) => {
+    e.preventDefault(); // Prevent default form submission
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      console.error("No token found");
+      return;
+    }
+
+    const decoded: DecodedToken = jwtDecode<DecodedToken>(token);
+    const userId = decoded.user_id;
+
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/users/${userId}/channels/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ channel_id: newChannelId }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+
+      const newChannel = await response.json();
+      setChannels([...channels, newChannel]); // Update the channel list
+      setNewChannelId(""); // Reset the input field
+      setIsDialogOpen(false); // Close the dialog
+    } catch (error) {
+      console.error("Failed to add channel:", error);
+    }
   };
 
   const deleteChannel = (id: string) => {
@@ -158,15 +200,38 @@ export default function Account() {
         <section className="bg-white shadow rounded-lg p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-semibold text-gray-800">Channels</h2>
-            <Button
-              onClick={addChannel}
-              size="sm"
-              className="bg-black hover:bg-gray-900 text-white"
-            >
-              <PlusIcon className="h-4 w-4 mr-2" />
-              Add Channel
-            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  Add Channel
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Channel</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={addChannel} className="space-y-4">
+                  <div>
+                    <Label htmlFor="userId">User ID</Label>
+                    <Input id="userId" value={user.email} disabled />
+                  </div>
+                  <div>
+                    <Label htmlFor="channelId">Channel ID</Label>
+                    <Input
+                      id="channelId"
+                      value={newChannelId}
+                      onChange={(e) => setNewChannelId(e.target.value)}
+                      placeholder="Enter Channel ID"
+                      required
+                    />
+                  </div>
+                  <Button type="submit">Add Channel</Button>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
+
           {error ? (
             <p className="text-red-500">{error}</p> // Display error message
           ) : (
@@ -203,28 +268,6 @@ export default function Account() {
               </TableBody>
             </Table>
           )}
-        </section>
-
-        {/* Footer Section with Edit and Logout */}
-        <section className="bg-white shadow rounded-lg p-6">
-          <div className="flex justify-between">
-            <Button
-              className="bg-blue-500 text-white hover:bg-blue-600"
-              onClick={() => console.log("Edit Account clicked")}
-            >
-              Edit Account
-            </Button>
-            <Button
-              variant="outline"
-              className="bg-white text-gray-600 border-gray-300 hover:bg-gray-100"
-              onClick={() => {
-                localStorage.removeItem("token");
-                window.location.href = "/login";
-              }}
-            >
-              Log Out
-            </Button>
-          </div>
         </section>
       </div>
     </div>
