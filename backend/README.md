@@ -48,3 +48,10 @@ curl -X POST "http://127.0.0.1:8000/summarize_comments/" \
 -H "Authorization: Bearer sdafsdfdsfasdfcvzxcv" \
 -H "Content-Type: application/json" \
 -d '{"video_id": "some_video_id", "prompt": "Summarize this video"}'
+
+curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJleHAiOjE3MjY2OTc1NDZ9.kf-fMtpdN7ZzYSJny50O7Zr8vnYJHeq7zqXOIgGg1oQ" http://127.0.0.1:8000/users/1/channels/
+
+curl -X POST http://127.0.0.1:8000/users/1/channels/ \
+ -H "Content-Type: application/json" \
+ -H "Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJleHAiOjE3MjY2OTc1NDZ9.kf-fMtpdN7ZzYSJny50O7Zr8vnYJHeq7zqXOIgGg1oQ" \
+ -d '{"channel_id": "UCNEWCHANNEL123", "user_id": 1}'

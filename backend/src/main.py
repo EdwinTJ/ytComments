@@ -85,7 +85,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -113,6 +113,20 @@ class ChannelVideosRequest(BaseModel):
 @app.get("/")
 async def read_root():
     return {"Hello": "World"}
+
+# 6. Token generation
+@app.post("/token/", response_model=Token)
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == form_data.username).first()
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    
+    # Send user info: user.id
+    access_token = create_access_token(data={"user_id": user.id}, expires_delta=access_token_expires)
+    
+    return {"access_token": access_token, "token_type": "bearer"}
 
 # Get Current User
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
@@ -162,32 +176,62 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     return user
 
-# 5. Create channel
-@app.post("/users/{user_id}/channels/")
-def add_channel(user_id: int, channel: ChannelCreate, db: Session = Depends(get_db)):
+######## Channel ######
+# 1. Create Channel (already exists, slightly modified for better conventions)
+@app.post("/users/{user_id}/channels/", response_model=ChannelCreate)
+def create_channel(user_id: int, channel: ChannelCreate, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        return {"error": "User not found"}
+        raise HTTPException(status_code=404, detail="User not found")
 
-    new_channel = ChannelInfo(channel_id=channel.channel_id, owner=user)
+    new_channel = ChannelInfo(channel_id=channel.channel_id, user_id=user.id)
     db.add(new_channel)
     db.commit()
     db.refresh(new_channel)
     return new_channel
 
-# 6. Token generation
-@app.post("/token/", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    
-    # Send user info: user.id
-    access_token = create_access_token(data={"user_id": user.id}, expires_delta=access_token_expires)
-    
-    return {"access_token": access_token, "token_type": "bearer"}
+# 2. Read Channels (list all channels for a user)
+@app.get("/users/{user_id}/channels/")
+def read_channels(user_id: int, db: Session = Depends(get_db)):
+    print(f"Fetching channels for user_id: {user_id}")  # Debug print
+    channels = db.query(ChannelInfo).filter(ChannelInfo.user_id == user_id).all()
+    if not channels:
+        raise HTTPException(status_code=404, detail="No channels found for this user")
+    return channels
+
+# 3. Read a specific channel by channel ID
+@app.get("/users/{user_id}/channels/{channel_id}")
+def read_channel(user_id: int, channel_id: int, db: Session = Depends(get_db)):
+    channel = db.query(ChannelInfo).filter(ChannelInfo.user_id == user_id, ChannelInfo.id == channel_id).first()
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+    return channel
+
+# 4. Update Channel
+@app.put("/users/{user_id}/channels/{channel_id}")
+def update_channel(user_id: int, channel_id: int, channel_update: ChannelCreate, db: Session = Depends(get_db)):
+    channel = db.query(ChannelInfo).filter(ChannelInfo.user_id == user_id, ChannelInfo.id == channel_id).first()
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+
+    # Update channel fields
+    channel.channel_id = channel_update.channel_id
+    db.commit()
+    db.refresh(channel)
+    return channel
+
+# 5. Delete Channel
+@app.delete("/users/{user_id}/channels/{channel_id}")
+def delete_channel(user_id: int, channel_id: int, db: Session = Depends(get_db)):
+    channel = db.query(ChannelInfo).filter(ChannelInfo.user_id == user_id, ChannelInfo.id == channel_id).first()
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+
+    db.delete(channel)
+    db.commit()
+    return {"message": "Channel deleted successfully"}
+###############
+
 
 # 7. Logout
 @app.post("/logout/")

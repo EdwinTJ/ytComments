@@ -1,32 +1,39 @@
 import { useState, useEffect } from "react";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { jwtDecode } from "jwt-decode";
+import { PlusIcon, TrashIcon } from "lucide-react";
 
 interface DecodedToken {
   user_id: string;
 }
-
+interface Channel {
+  id: string;
+  channel_id: string;
+}
 interface User {
   name: string;
   email: string;
-  channels: string[];
+  channels: string[]; // Make sure to update this to match your API response
 }
 
 export default function Account() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [error, setError] = useState<string | null>(null); // Error state
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+
     const fetchUserData = async () => {
-      const token = localStorage.getItem("token");
       if (token) {
         const decoded: DecodedToken = jwtDecode<DecodedToken>(token);
         const userId = decoded.user_id;
@@ -50,6 +57,51 @@ export default function Account() {
           setIsLoading(false);
         } catch (error) {
           console.error("Failed to fetch user data:", error);
+          setIsLoading(false);
+        }
+      } else {
+        console.error("No token found");
+        setIsLoading(false);
+      }
+    };
+
+    const fetchUserChannels = async () => {
+      if (token) {
+        const decoded: DecodedToken = jwtDecode<DecodedToken>(token);
+        const userId = decoded.user_id;
+
+        try {
+          const response = await fetch(
+            `http://127.0.0.1:8000/users/${userId}/channels/`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          // Read the response body only once
+          const responseBody = await response.text(); // Read as text first
+          console.log(responseBody);
+
+          if (response.status === 404) {
+            setError("No channels found for this user.");
+            setChannels([]); // Clear channels
+            return;
+          }
+
+          if (!response.ok) {
+            throw new Error(`Error: ${response.status}`);
+          }
+
+          // Parse JSON from the response text
+          const data = JSON.parse(responseBody);
+          setChannels(data); // Set channels data
+        } catch (error) {
+          console.error("Failed to fetch channels:", error);
+          setError("Failed to fetch channels.");
         }
       } else {
         console.error("No token found");
@@ -57,7 +109,16 @@ export default function Account() {
     };
 
     fetchUserData();
+    fetchUserChannels();
   }, []);
+
+  const addChannel = () => {
+    console.log("Add");
+  };
+
+  const deleteChannel = (id: string) => {
+    console.log(`delete ${id}`);
+  };
 
   if (isLoading) {
     return <p>Loading...</p>;
@@ -68,57 +129,104 @@ export default function Account() {
   }
 
   return (
-    <section className="flex-1 p-8 overflow-auto">
-      <Card className="w-full max-w-md mx-auto overflow-hidden">
-        <CardHeader className="p-4">
-          <CardTitle className="text-xl font-bold text-gray-800">
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-4xl mx-auto space-y-12">
+        <header className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900">
             Account Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col p-4">
-          <CardDescription className="text-lg text-gray-600">
-            <strong>Name:</strong> {user.name}
-          </CardDescription>
-          <CardDescription className="text-lg text-gray-600 mt-2">
-            <strong>Email:</strong> {user.email}
-          </CardDescription>
-          <CardDescription className="text-lg text-gray-600 mt-2">
-            <strong>Associated YouTube Channels:</strong>
-          </CardDescription>
-          <ul className="list-disc list-inside text-gray-600 mt-2">
-            {/* Use optional chaining or provide a default empty array */}
-            {user.channels?.length > 0 ? (
-              user.channels.map((channel, index) => (
-                <li key={index}>{channel}</li>
-              ))
-            ) : (
-              <li>No channels associated.</li>
-            )}
-          </ul>
-        </CardContent>
-        <CardFooter className="flex flex-col sm:flex-row justify-between p-4 space-y-2 sm:space-y-0 sm:space-x-2">
-          <Button
-            className="bg-blue-500 text-white hover:bg-blue-600 flex-1"
-            onClick={() => {
-              // Logic to handle editing account
-              console.log("Edit Account clicked");
-            }}
-          >
-            Edit Account
-          </Button>
-          <Button
-            variant="outline"
-            className="bg-white text-gray-600 border-gray-300 hover:bg-gray-100 flex-1"
-            onClick={() => {
-              // Logic to handle logout
-              localStorage.removeItem("token");
-              window.location.href = "/login";
-            }}
-          >
-            Log Out
-          </Button>
-        </CardFooter>
-      </Card>
-    </section>
+          </h1>
+        </header>
+
+        {/* Personal Details Section */}
+        <section className="bg-white shadow rounded-lg p-6">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+            Personal Details
+          </h2>
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Name</h3>
+              <p className="mt-1 text-lg text-gray-900">{user.name}</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Email</h3>
+              <p className="mt-1 text-lg text-gray-900">{user.email}</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Channels Section */}
+        <section className="bg-white shadow rounded-lg p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-semibold text-gray-800">Channels</h2>
+            <Button
+              onClick={addChannel}
+              size="sm"
+              className="bg-black hover:bg-gray-900 text-white"
+            >
+              <PlusIcon className="h-4 w-4 mr-2" />
+              Add Channel
+            </Button>
+          </div>
+          {error ? (
+            <p className="text-red-500">{error}</p> // Display error message
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Channel ID</TableHead>
+                  <TableHead className="w-[100px]">Delete</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {channels.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={2}>No channels available.</TableCell>
+                  </TableRow>
+                ) : (
+                  channels.map((channel) => (
+                    <TableRow key={channel.id} className="hover:bg-gray-100">
+                      <TableCell>{channel.channel_id}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="bg-red-500 hover:bg-red-600 text-white"
+                          onClick={() => deleteChannel(channel.id)}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                          <span className="sr-only">Delete channel</span>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </section>
+
+        {/* Footer Section with Edit and Logout */}
+        <section className="bg-white shadow rounded-lg p-6">
+          <div className="flex justify-between">
+            <Button
+              className="bg-blue-500 text-white hover:bg-blue-600"
+              onClick={() => console.log("Edit Account clicked")}
+            >
+              Edit Account
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-white text-gray-600 border-gray-300 hover:bg-gray-100"
+              onClick={() => {
+                localStorage.removeItem("token");
+                window.location.href = "/login";
+              }}
+            >
+              Log Out
+            </Button>
+          </div>
+        </section>
+      </div>
+    </div>
   );
 }
