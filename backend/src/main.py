@@ -27,7 +27,7 @@ SECRET_KEY = os.environ['SECRET_KEY']
 ALGORITHM = os.environ['ALGORITHM']
 
 ### PWD HASING HANDLING
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -45,7 +45,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -152,6 +152,8 @@ async def summarize_video_comments(request: CommentSummarizeRequest, user: User 
 # 2. Get channel videos
 @app.post("/channel_videos/")
 async def get_videos_from_channel(request: ChannelVideosRequest, user: User = Depends(get_current_user)):
+    print(f"Fetching videos: {request}")  # Debug print
+
     videos = get_channel_videos(request.channel_id)
     
     if not videos:
@@ -192,7 +194,7 @@ def create_channel(user_id: int, channel: ChannelCreate, db: Session = Depends(g
 # 2. Read Channels (list all channels for a user)
 @app.get("/users/{user_id}/channels/")
 def read_channels(user_id: int, db: Session = Depends(get_db)):
-    print(f"Fetching channels for user_id: {user_id}")  # Debug print
+    # print(f"Fetching channels for user_id: {user_id}")  # Debug print
     channels = db.query(ChannelInfo).filter(ChannelInfo.user_id == user_id).all()
     if not channels:
         raise HTTPException(status_code=404, detail="No channels found for this user")

@@ -9,6 +9,15 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Pagination from "@/components/Pagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { jwtDecode } from "jwt-decode";
+import { Navigate } from "react-router-dom";
 
 interface Video {
   thumbnail: string;
@@ -17,29 +26,96 @@ interface Video {
   videoId: string;
 }
 
+interface Channel {
+  id: string;
+  channel_id: string;
+}
+
+interface DecodedToken {
+  user_id: string;
+  exp: number; // Ensure the exp field is included in the token payload
+}
+
 export default function Dashboard() {
   const [videos, setVideos] = useState<Video[]>([]);
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [selectedChannel, setSelectedChannel] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const videosPerPage = 10;
 
+  const isTokenExpired = (token: string) => {
+    const decoded: DecodedToken = jwtDecode<DecodedToken>(token);
+    const currentTime = Date.now() / 1000;
+    return decoded.exp < currentTime;
+  };
+
+  // Fetch channels when the component mounts
   useEffect(() => {
+    const fetchChannels = async () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        const decoded: DecodedToken = jwtDecode<DecodedToken>(token);
+        const userId = decoded.user_id;
+
+        try {
+          const response = await fetch(
+            `http://127.0.0.1:8000/users/${userId}/channels`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          const data = await response.json();
+          if (response.ok) {
+            setChannels(data); // Store channels in state
+            if (data.length > 0) {
+              setSelectedChannel(data[0].channel_id); // Set the first channel as default
+            }
+          } else {
+            console.error("Failed to fetch channels:", data.detail);
+          }
+        } catch (error) {
+          console.error("Error fetching channels:", error);
+        }
+      }
+    };
+
+    fetchChannels();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedChannel) return;
+
     const fetchVideos = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("Token is missing.");
+        return;
+      }
+
+      if (isTokenExpired(token)) {
+        console.error("Token is expired.");
+        <Navigate to="/" />;
+        return;
+      }
+
       try {
-        const token = localStorage.getItem("token");
-        const response = await fetch("http://127.0.0.1:8000/channel_videos/", {
+        const response = await fetch(`http://127.0.0.1:8000/channel_videos/`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            channel_id: "UCSUwTmHIP_rlCTZeQW2oiEg",
-          }),
+          body: JSON.stringify({ channel_id: selectedChannel }),
         });
 
         const data = await response.json();
         if (response.ok) {
-          setVideos(data.videos);
+          setVideos(data.videos || []);
         } else {
           console.error("Failed to fetch videos:", data.detail);
         }
@@ -49,7 +125,7 @@ export default function Dashboard() {
     };
 
     fetchVideos();
-  }, []);
+  }, [selectedChannel]);
 
   const indexOfLastVideo = currentPage * videosPerPage;
   const indexOfFirstVideo = indexOfLastVideo - videosPerPage;
@@ -63,6 +139,23 @@ export default function Dashboard() {
 
   return (
     <section className="flex-1 p-8 overflow-auto">
+      {/* Dropdown in top-center of the page */}
+      <div className="flex justify-center mb-4">
+        <Select value={selectedChannel} onValueChange={setSelectedChannel}>
+          <SelectTrigger className="w-64">
+            <SelectValue placeholder="Select a channel" />
+          </SelectTrigger>
+          <SelectContent>
+            {channels.map((channel) => (
+              <SelectItem key={channel.id} value={channel.channel_id}>
+                {channel.channel_id}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Videos display */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {currentVideos.map((video, index) => (
           <Card
@@ -104,6 +197,8 @@ export default function Dashboard() {
           </Card>
         ))}
       </div>
+
+      {/* Pagination */}
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}
