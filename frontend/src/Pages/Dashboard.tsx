@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -17,7 +18,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { jwtDecode } from "jwt-decode";
-import { Navigate } from "react-router-dom";
 
 interface Video {
   thumbnail: string;
@@ -33,7 +33,7 @@ interface Channel {
 
 interface DecodedToken {
   user_id: string;
-  exp: number; // Ensure the exp field is included in the token payload
+  exp: number;
 }
 
 export default function Dashboard() {
@@ -42,6 +42,7 @@ export default function Dashboard() {
   const [selectedChannel, setSelectedChannel] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const videosPerPage = 10;
+  const navigate = useNavigate();
 
   const isTokenExpired = (token: string) => {
     const decoded: DecodedToken = jwtDecode<DecodedToken>(token);
@@ -49,7 +50,6 @@ export default function Dashboard() {
     return decoded.exp < currentTime;
   };
 
-  // Fetch channels when the component mounts
   useEffect(() => {
     const fetchChannels = async () => {
       const token = localStorage.getItem("token");
@@ -71,9 +71,9 @@ export default function Dashboard() {
 
           const data = await response.json();
           if (response.ok) {
-            setChannels(data); // Store channels in state
+            setChannels(data);
             if (data.length > 0) {
-              setSelectedChannel(data[0].channel_id); // Set the first channel as default
+              setSelectedChannel(data[0].channel_id);
             }
           } else {
             console.error("Failed to fetch channels:", data.detail);
@@ -99,7 +99,7 @@ export default function Dashboard() {
 
       if (isTokenExpired(token)) {
         console.error("Token is expired.");
-        <Navigate to="/" />;
+        navigate("/");
         return;
       }
 
@@ -139,7 +139,6 @@ export default function Dashboard() {
 
   return (
     <section className="flex-1 p-8 overflow-auto">
-      {/* Dropdown in top-center of the page */}
       <div className="flex justify-center mb-4">
         <Select value={selectedChannel} onValueChange={setSelectedChannel}>
           <SelectTrigger className="w-64">
@@ -155,7 +154,6 @@ export default function Dashboard() {
         </Select>
       </div>
 
-      {/* Videos display */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {currentVideos.map((video, index) => (
           <Card
@@ -190,7 +188,14 @@ export default function Dashboard() {
               >
                 Watch Video
               </Button>
-              <Button className="bg-blue-500 text-white hover:bg-blue-600 flex-1">
+              <Button
+                className="bg-blue-500 text-white hover:bg-blue-600 flex-1"
+                onClick={() =>
+                  navigate(`/aisummary/${video.videoId}`, {
+                    state: { title: video.title },
+                  })
+                }
+              >
                 Get AI Summary
               </Button>
             </CardFooter>
@@ -198,7 +203,6 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Pagination */}
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}

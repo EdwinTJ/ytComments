@@ -38,9 +38,9 @@ export default function Account() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [channels, setChannels] = useState<Channel[]>([]);
-  const [error, setError] = useState<string | null>(null); // Error state
-  const [newChannelId, setNewChannelId] = useState<string>(""); // State for new channel ID
-  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false); // Dialog state
+  const [error, setError] = useState<string | null>(null);
+  const [newChannelId, setNewChannelId] = useState<string>("");
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -94,7 +94,7 @@ export default function Account() {
             }
           );
 
-          const responseBody = await response.text(); // Read as text first
+          const responseBody = await response.text();
           if (response.status === 404) {
             setError("No channels found for this user.");
             setChannels([]); // Clear channels
@@ -106,7 +106,7 @@ export default function Account() {
           }
 
           const data = JSON.parse(responseBody);
-          setChannels(data); // Set channels data
+          setChannels(data);
         } catch (error) {
           console.error("Failed to fetch channels:", error);
           setError("Failed to fetch channels.");
@@ -121,9 +121,8 @@ export default function Account() {
   }, []);
 
   // Function to handle adding a channel
-  // Function to handle adding a channel
   const addChannel = async (e: React.FormEvent) => {
-    e.preventDefault(); // Prevent default form submission
+    e.preventDefault();
     const token = localStorage.getItem("token");
 
     if (!token) {
@@ -133,6 +132,7 @@ export default function Account() {
 
     const decoded: DecodedToken = jwtDecode<DecodedToken>(token);
     const userId = decoded.user_id;
+    const trimmedChannelId = newChannelId.trim();
 
     try {
       const response = await fetch(
@@ -143,21 +143,21 @@ export default function Account() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ channel_id: newChannelId }), // Send channel_id in the body
+          body: JSON.stringify({ channel_id: trimmedChannelId }),
         }
       );
 
       if (!response.ok) {
         if (response.status === 404) {
-          setError("User not found"); // Handling 404 error for user not found
+          setError("User not found");
         } else {
-          throw new Error(`Error: ${response.status}`); // Other errors
+          throw new Error(`Error: ${response.status}`);
         }
       } else {
-        const newChannel = await response.json(); // Parse new channel data from the response
-        setChannels([...channels, newChannel]); // Add the new channel to the existing list
+        const newChannel = await response.json();
+        setChannels([...channels, newChannel]);
         setNewChannelId(""); // Reset the input field
-        setIsDialogOpen(false); // Close the dialog
+        setIsDialogOpen(false);
       }
     } catch (error) {
       console.error("Failed to add channel:", error);
@@ -190,9 +190,9 @@ export default function Account() {
 
       if (!response.ok) {
         if (response.status === 404) {
-          setError("Channel not found"); // Handling channel not found error
+          setError("Channel not found");
         } else {
-          throw new Error(`Error: ${response.status}`); // Handling other errors
+          throw new Error(`Error: ${response.status}`);
         }
       } else {
         // Remove the deleted channel from the state
@@ -275,7 +275,7 @@ export default function Account() {
           </div>
 
           {error ? (
-            <p className="text-red-500">{error}</p> // Display error message
+            <p className="text-red-500">{error}</p>
           ) : (
             <Table>
               <TableHeader>
@@ -298,7 +298,7 @@ export default function Account() {
                           variant="destructive"
                           size="sm"
                           className="bg-red-500 hover:bg-red-600 text-white"
-                          onClick={() => deleteChannel(channel.id)} // Pass channel id to deleteChannel
+                          onClick={() => deleteChannel(channel.id)}
                         >
                           <TrashIcon className="h-4 w-4" />
                           <span className="sr-only">Delete channel</span>
