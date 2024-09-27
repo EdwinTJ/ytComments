@@ -1,14 +1,8 @@
 # openai.py
 from openai import OpenAI
-import os
-
-# Load the environment variable
-from dotenv import load_dotenv
-load_dotenv()
 
 # Environment variable
-OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
-
+from config import OPENAI_API_KEY
 def summarize_comments(comments, prompt):
     client = OpenAI(api_key=OPENAI_API_KEY)
     

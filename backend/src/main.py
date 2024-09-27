@@ -1,17 +1,13 @@
 from fastapi import FastAPI, HTTPException,Depends
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 
 from youtube import get_video_comments, get_channel_videos
 from open_ai import summarize_comments
 
 from sqlalchemy.orm import Session
 from database.dependencies import get_db
-from database.models import User,ChannelInfo
 
-import os
-from dotenv import load_dotenv
-load_dotenv()
+
 
 # JWT PASSWORD HASHING
 from datetime import datetime, timedelta
@@ -20,14 +16,13 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
+# Schemas
+from database.models import User,ChannelInfo
+from schemas.schemas import Token,UserCreate,ChannelCreate,CommentSummarizeRequest,ChannelVideosRequest
 # Environment variables
-YOUTUBE_API_KEY = os.environ['YOUTUBE_API_KEY']
-OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
-SECRET_KEY = os.environ['SECRET_KEY']
-ALGORITHM = os.environ['ALGORITHM']
+from config import SECRET_KEY,ALGORITHM,ACCESS_TOKEN_EXPIRE_MINUTES
 
 ### PWD HASING HANDLING
-ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -57,12 +52,7 @@ def verify_token(token: str) -> dict:
     except JWTError:
         raise HTTPException(status_code=401, detail="Could not validate credentials")
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
 
-class TokenData(BaseModel):
-    user_id: int
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -91,20 +81,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class UserCreate(BaseModel):
-    name: str
-    email: str
-    password: str
 
-class ChannelCreate(BaseModel):
-    channel_id: str
-
-class CommentSummarizeRequest(BaseModel):
-    video_id: str
-    prompt: str
-
-class ChannelVideosRequest(BaseModel):
-    channel_id: str
 
 # API Endpoints
 

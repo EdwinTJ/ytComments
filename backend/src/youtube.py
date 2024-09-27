@@ -1,15 +1,8 @@
 # youtube.py
 from googleapiclient.discovery import build
-import os
-
-# Load the environment variables
-from dotenv import load_dotenv
-load_dotenv()
 
 # Environment variables
-YOUTUBE_API_KEY = os.environ['YOUTUBE_API_KEY']
-YOUTUBE_API_SERVICE_NAME = os.environ['YOUTUBE_API_SERVICE_NAME']
-YOUTUBE_API_VERSION = os.environ['YOUTUBE_API_VERSION']
+from config import YOUTUBE_API_KEY,YOUTUBE_API_SERVICE_NAME,YOUTUBE_API_VERSION
 
 def get_video_comments(video_id):
     youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, developerKey=YOUTUBE_API_KEY)
