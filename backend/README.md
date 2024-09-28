@@ -11,6 +11,8 @@ Description: Esta página te explica Patrones de Diseño en Programación, total
 
 uvicorn main:app --reload
 
+fastapi dev main.py
+
 ## CURL
 
 curl -X POST "http://127.0.0.1:8000/users/" \

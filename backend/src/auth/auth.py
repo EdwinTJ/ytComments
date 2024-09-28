@@ -41,6 +41,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 def verify_token(token: str) -> dict:
     try:
+        print("Verifying token")
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
     except JWTError:
@@ -49,11 +50,15 @@ def verify_token(token: str) -> dict:
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    print(f"Token received: {token}")
     payload = verify_token(token)
     user_email = payload.get("email")
+    print(f"email {user_email}")
     if user_email is None:
+        print("email error")
         raise HTTPException(status_code=401, detail="Invalid token")
     user = db.query(User).filter(User.email == user_email).first()
     if user is None:
+        print("no user")
         raise HTTPException(status_code=401, detail="User not found")
     return user
