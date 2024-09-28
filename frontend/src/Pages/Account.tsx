@@ -84,7 +84,7 @@ export default function Account() {
 
         try {
           const response = await fetch(
-            `http://127.0.0.1:8000/users/${userId}/channels/`,
+            `http://127.0.0.1:8000/channels/${userId}/channels/`,
             {
               method: "GET",
               headers: {

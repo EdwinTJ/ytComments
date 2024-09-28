@@ -59,7 +59,7 @@ export default function Dashboard() {
 
         try {
           const response = await fetch(
-            `http://127.0.0.1:8000/users/${userId}/channels`,
+            `http://127.0.0.1:8000/channels/${userId}/channels/`,
             {
               method: "GET",
               headers: {
@@ -92,6 +92,7 @@ export default function Dashboard() {
 
     const fetchVideos = async () => {
       const token = localStorage.getItem("token");
+      console.log("token ", token);
       if (!token) {
         console.error("Token is missing.");
         return;
@@ -102,16 +103,18 @@ export default function Dashboard() {
         navigate("/");
         return;
       }
-
       try {
-        const response = await fetch(`http://127.0.0.1:8000/channel_videos/`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ channel_id: selectedChannel }),
-        });
+        const response = await fetch(
+          `http://127.0.0.1:8000/channels/channel_videos/`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ channel_id: selectedChannel }),
+          }
+        );
 
         const data = await response.json();
         if (response.ok) {
