@@ -6,6 +6,7 @@ import AuthOptions from "./components/AuthOptions";
 import Account from "./Pages/Account";
 import Home from "./Pages/Home";
 import AISummary from "./Pages/AISummary";
+import VideoById from "./Pages/VideoById";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -40,7 +41,15 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "/aisummary/:title",
+        path: "/videoById",
+        element: (
+          <PrivateRoute>
+            <VideoById />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: "/aisummary/:videoId",
         element: (
           <PrivateRoute>
             <AISummary />

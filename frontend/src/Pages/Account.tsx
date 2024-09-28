@@ -136,7 +136,7 @@ export default function Account() {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/users/${userId}/channels/`,
+        `http://127.0.0.1:8000/channels/${userId}/channels/`,
         {
           method: "POST",
           headers: {
@@ -158,6 +158,7 @@ export default function Account() {
         setChannels([...channels, newChannel]);
         setNewChannelId(""); // Reset the input field
         setIsDialogOpen(false);
+        location.reload();
       }
     } catch (error) {
       console.error("Failed to add channel:", error);
