@@ -1,14 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
-import {
-  HomeIcon,
-  UserIcon,
-  SettingsIcon,
-  VideoIcon,
-  LogOutIcon,
-} from "lucide-react";
+import { HomeIcon, UserIcon, VideoIcon, LogOutIcon } from "lucide-react";
 
 export default function Navbar() {
-  const isAuthenticated = localStorage.getItem("token"); // Check if user is logged in
+  const isAuthenticated = localStorage.getItem("token");
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -25,15 +19,6 @@ export default function Navbar() {
   return (
     <nav className="p-4">
       <ul className="space-y-2">
-        {/* <li>
-          <Link
-            to="/"
-            className="flex items-center p-2 text-gray-600 rounded hover:bg-gray-100"
-          >
-            <HomeIcon className="w-5 h-5 mr-3" />
-            
-          </Link>
-        </li> */}
         {isAuthenticated && (
           <>
             <li>
@@ -61,15 +46,6 @@ export default function Navbar() {
               >
                 <VideoIcon className="w-5 h-5 mr-3" />
                 Videos
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/settings" // Correct the path
-                className="flex items-center p-2 text-gray-600 rounded hover:bg-gray-100"
-              >
-                <SettingsIcon className="w-5 h-5 mr-3" />
-                Settings
               </Link>
             </li>
             <li>

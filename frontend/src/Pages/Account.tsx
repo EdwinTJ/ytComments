@@ -178,7 +178,7 @@ export default function Account() {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/users/${userId}/channels/${channelId}`,
+        `http://127.0.0.1:8000/channels/${userId}/channels/${channelId}`,
         {
           method: "DELETE",
           headers: {

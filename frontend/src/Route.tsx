@@ -33,11 +33,19 @@ const router = createBrowserRouter([
       },
       {
         path: "/account",
-        element: <Account />,
+        element: (
+          <PrivateRoute>
+            <Account />
+          </PrivateRoute>
+        ),
       },
       {
         path: "/aisummary/:title",
-        element: <AISummary />,
+        element: (
+          <PrivateRoute>
+            <AISummary />
+          </PrivateRoute>
+        ),
       },
     ],
   },
