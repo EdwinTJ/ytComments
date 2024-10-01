@@ -180,18 +180,6 @@ export default function Dashboard() {
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row justify-between p-4 space-y-2 sm:space-y-0 sm:space-x-2">
               <Button
-                variant="outline"
-                className="bg-white text-gray-600 border-gray-300 hover:bg-gray-100 flex-1"
-                onClick={() =>
-                  window.open(
-                    `https://www.youtube.com/watch?v=${video.videoId}`,
-                    "_blank"
-                  )
-                }
-              >
-                Watch Video
-              </Button>
-              <Button
                 className="bg-blue-500 text-white hover:bg-blue-600 flex-1"
                 onClick={() =>
                   navigate(`/aisummary/${video.videoId}`, {
