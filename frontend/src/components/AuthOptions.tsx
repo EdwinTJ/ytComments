@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { LogInIcon, UserPlusIcon } from "lucide-react";
+import { LogInIcon, UserPlusIcon, Search } from "lucide-react"; // Assuming you have a GoogleIcon or similar
 import { useState } from "react";
 
 export default function AuthOptions() {
@@ -40,6 +40,11 @@ export default function AuthOptions() {
       setError("Login failed");
       console.error("Error logging in:", error);
     }
+  };
+
+  const handleGoogleLogin = async () => {
+    // Redirect to your FastAPI authorization route
+    window.location.href = "http://127.0.0.1:8000/auth/authorize";
   };
 
   return (
@@ -80,6 +85,16 @@ export default function AuthOptions() {
             >
               <LogInIcon className="mr-2 h-5 w-5" aria-hidden="true" />
               Login
+            </Button>
+          </div>
+          <div>
+            <Button
+              variant="outline"
+              className="w-full flex justify-center items-center py-3 px-4 border border-gray-300 rounded-md"
+              onClick={handleGoogleLogin} // Handle Google login
+            >
+              <Search className="mr-2 h-5 w-5" aria-hidden="true" />
+              Login with Google
             </Button>
           </div>
           <div>

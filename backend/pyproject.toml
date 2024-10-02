@@ -16,6 +16,9 @@ SQLAlchemy = "^2.0.34"
 python-jose = "^3.3.0"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 bcrypt = "^3.2"
+google-auth-oauthlib = "^1.2.1"
+google-auth-httplib2 = "^0.2.0"
+google-auth = "^2.35.0"
 
 [tool.poetry.dev-dependencies]
 
