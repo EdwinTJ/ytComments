@@ -1,18 +1,35 @@
+import { useEffect } from "react";
+import { Outlet, useNavigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
-import { Outlet } from "react-router-dom";
-function App() {
+
+const App = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const name = params.get("name");
+    const email = params.get("email");
+    const channel_id = params.get("channel_id");
+    const access_token = params.get("access_token");
+    const refresh_token = params.get("refresh_token");
+
+    if (name && email && channel_id && access_token && refresh_token) {
+      const userDataObj = { name, email, channel_id };
+      localStorage.setItem("userData", JSON.stringify(userDataObj));
+      localStorage.setItem("token", access_token);
+      localStorage.setItem("refreshToken", refresh_token);
+      navigate("/home", { replace: true });
+    }
+  }, [navigate]);
+
   return (
-    <div className="relative flex flex-col h-screen bg-gray-50">
-      <div className="flex flex-1">
-        <aside className="w-50 bg-white shadow-md md:w-50">
-          <Navbar />
-        </aside>
-        <main className="flex-1 p-8">
-          <Outlet />
-        </main>
-      </div>
+    <div className="flex">
+      <Navbar />
+      <main className="flex-1">
+        <Outlet />
+      </main>
     </div>
   );
-}
+};
 
 export default App;

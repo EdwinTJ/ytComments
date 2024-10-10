@@ -1,318 +1,52 @@
-import { useState, useEffect } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@radix-ui/react-label";
-import { PlusIcon, TrashIcon } from "lucide-react";
-import { jwtDecode } from "jwt-decode";
+import { logout } from "../api";
 
-interface DecodedToken {
-  user_id: string;
-}
-interface Channel {
-  id: string;
-  channel_id: string;
-}
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  channels: string[];
-}
-
-export default function Account() {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [channels, setChannels] = useState<Channel[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [newChannelId, setNewChannelId] = useState<string>("");
-  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+const Account = () => {
+  const [userData, setUserData] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-
-    const fetchUserData = async () => {
-      if (token) {
-        const decoded: DecodedToken = jwtDecode<DecodedToken>(token);
-        const userId = decoded.user_id;
-
-        try {
-          const response = await fetch(
-            `http://127.0.0.1:8000/users/${userId}`,
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-          if (!response.ok) {
-            throw new Error(`Error: ${response.status}`);
-          }
-          const data = await response.json();
-          setUser(data); // Set user data
-          setIsLoading(false);
-        } catch (error) {
-          console.error("Failed to fetch user data:", error);
-          setIsLoading(false);
-        }
-      } else {
-        console.error("No token found");
-        setIsLoading(false);
-      }
-    };
-
-    const fetchUserChannels = async () => {
-      if (token) {
-        const decoded: DecodedToken = jwtDecode<DecodedToken>(token);
-        const userId = decoded.user_id;
-
-        try {
-          const response = await fetch(
-            `http://127.0.0.1:8000/channels/${userId}/channels/`,
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-
-          const responseBody = await response.text();
-          if (response.status === 404) {
-            setError("No channels found for this user.");
-            setChannels([]); // Clear channels
-            return;
-          }
-
-          if (!response.ok) {
-            throw new Error(`Error: ${response.status}`);
-          }
-
-          const data = JSON.parse(responseBody);
-          setChannels(data);
-        } catch (error) {
-          console.error("Failed to fetch channels:", error);
-          setError("Failed to fetch channels.");
-        }
-      } else {
-        console.error("No token found");
-      }
-    };
-
-    fetchUserData();
-    fetchUserChannels();
-  }, []);
-
-  // Function to handle adding a channel
-  const addChannel = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      console.error("No token found");
-      return;
+    const storedUserData = localStorage.getItem("userData");
+    if (storedUserData) {
+      setUserData(JSON.parse(storedUserData));
+    } else {
+      navigate("/login");
     }
+  }, [navigate]);
 
-    const decoded: DecodedToken = jwtDecode<DecodedToken>(token);
-    const userId = decoded.user_id;
-    const trimmedChannelId = newChannelId.trim();
-
+  const handleLogout = async () => {
     try {
-      const response = await fetch(
-        `http://127.0.0.1:8000/channels/${userId}/channels/`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ channel_id: trimmedChannelId }),
-        }
-      );
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          setError("User not found");
-        } else {
-          throw new Error(`Error: ${response.status}`);
-        }
-      } else {
-        const newChannel = await response.json();
-        setChannels([...channels, newChannel]);
-        setNewChannelId(""); // Reset the input field
-        setIsDialogOpen(false);
-        location.reload();
-      }
+      await logout();
+      localStorage.removeItem("userData");
+      localStorage.removeItem("accessToken");
+      navigate("/login");
     } catch (error) {
-      console.error("Failed to add channel:", error);
-      setError("Failed to add channel.");
+      console.error("Error logging out:", error);
     }
   };
 
-  const deleteChannel = async (channelId: string) => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      console.error("No token found");
-      return;
-    }
-
-    const decoded: DecodedToken = jwtDecode<DecodedToken>(token);
-    const userId = decoded.user_id;
-
-    try {
-      const response = await fetch(
-        `http://127.0.0.1:8000/channels/${userId}/channels/${channelId}`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          setError("Channel not found");
-        } else {
-          throw new Error(`Error: ${response.status}`);
-        }
-      } else {
-        // Remove the deleted channel from the state
-        setChannels(channels.filter((channel) => channel.id !== channelId));
-      }
-    } catch (error) {
-      console.error("Failed to delete channel:", error);
-      setError("Failed to delete channel.");
-    }
-  };
-
-  if (isLoading) {
-    return <p>Loading...</p>;
-  }
-
-  if (!user) {
-    return <p>No user data available.</p>;
+  if (!userData) {
+    return null; // or a loading spinner
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto space-y-12">
-        <header className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Account Information
-          </h1>
-        </header>
-
-        {/* Personal Details Section */}
-        <section className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-            Personal Details
-          </h2>
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Name</h3>
-              <p className="mt-1 text-lg text-gray-900">{user.name}</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Email</h3>
-              <p className="mt-1 text-lg text-gray-900">{user.email}</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Channels Section */}
-        <section className="bg-white shadow rounded-lg p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-semibold text-gray-800">Channels</h2>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <PlusIcon className="h-4 w-4 mr-2" />
-                  Add Channel
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Channel</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={addChannel} className="space-y-4">
-                  <div>
-                    <Label htmlFor="userId">User ID</Label>
-                    <Input id="userId" value={user.id} disabled />
-                  </div>
-                  <div>
-                    <Label htmlFor="channelId">Channel ID</Label>
-                    <Input
-                      id="channelId"
-                      value={newChannelId}
-                      onChange={(e) => setNewChannelId(e.target.value)}
-                      placeholder="Enter Channel ID"
-                      required
-                    />
-                  </div>
-                  <Button type="submit">Add Channel</Button>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          {error ? (
-            <p className="text-red-500">{error}</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Channel ID</TableHead>
-                  <TableHead className="w-[100px]">Delete</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {channels.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={2}>No channels available.</TableCell>
-                  </TableRow>
-                ) : (
-                  channels.map((channel) => (
-                    <TableRow key={channel.id} className="hover:bg-gray-100">
-                      <TableCell>{channel.channel_id}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          className="bg-red-500 hover:bg-red-600 text-white"
-                          onClick={() => deleteChannel(channel.id)}
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                          <span className="sr-only">Delete channel</span>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </section>
+    <div className="p-8">
+      <h1 className="text-3xl font-bold mb-6">Account Information</h1>
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold">Name: {userData.name}</h2>
+        <p>Email: {userData.email}</p>
+        <p>Channel ID: {userData.channel_id}</p>
       </div>
+      <Button onClick={handleLogout} className="bg-red-500 text-white mr-4">
+        Logout
+      </Button>
+      <Button onClick={() => navigate("/")} className="bg-blue-500 text-white">
+        Back to Dashboard
+      </Button>
     </div>
   );
-}
+};
+
+export default Account;

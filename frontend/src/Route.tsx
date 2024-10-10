@@ -1,12 +1,14 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import App from "./App";
 import Dashboard from "./Pages/Dashboard";
 import PrivateRoute from "./components/PrivateRoute";
-import AuthOptions from "./components/AuthOptions";
+import Login from "./components/Login";
 import Account from "./Pages/Account";
 import Home from "./Pages/Home";
 import AISummary from "./Pages/AISummary";
 import VideoById from "./Pages/VideoById";
+import ErrorPage from "./Pages/ErrorPage";
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -14,7 +16,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: <AuthOptions />,
+        element: <Login />,
       },
       {
         path: "/home",
@@ -55,6 +57,14 @@ const router = createBrowserRouter([
             <AISummary />
           </PrivateRoute>
         ),
+      },
+      {
+        path: "/error",
+        element: <ErrorPage />,
+      },
+      {
+        path: "*",
+        element: <Navigate to="/error" replace />,
       },
     ],
   },

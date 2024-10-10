@@ -1,48 +1,63 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { clearStoredTokens } from "../utils/auth";
+import api from "../api";
 
 export default function VideoById() {
   const [videoId, setVideoId] = useState<string>("");
   const [prompt, setPrompt] = useState<string>("");
   const [summary, setSummary] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSubmit = async () => {
+  useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-      console.error("Token is missing.");
-      setError("Token is missing.");
+      navigate("/login");
+    }
+  }, [navigate]);
+
+  const handleSubmit = async () => {
+    if (!videoId.trim()) {
+      setError("Please enter a valid Video ID.");
       return;
     }
 
-    console.log("ID :", videoId);
-    try {
-      const response = await fetch(
-        "http://127.0.0.1:8000/comments/summarize_comments/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ video_id: videoId, prompt }),
-        }
-      );
+    setIsLoading(true);
+    setError(null);
+    setSummary(null);
 
-      const data = await response.json();
-      if (response.ok) {
-        setSummary(data.summary);
-        setError(null); // Reset error if the request was successful
+    try {
+      const response = await api.post("/api/summarize_comments", {
+        video_id: videoId,
+        prompt,
+      });
+
+      if (response.data && response.data.summary) {
+        setSummary(response.data.summary);
       } else {
-        console.error("Failed to fetch summary:", data.detail);
-        setError(data.detail);
-        setSummary(null); // Reset summary on error
+        setError("Failed to fetch summary. Please try again.");
       }
     } catch (error) {
       console.error("Error fetching summary:", error);
-      setError("Error fetching summary.");
-      setSummary(null); // Reset summary on error
+      if (error.response && error.response.status === 401) {
+        clearStoredTokens();
+        navigate("/login", {
+          state: {
+            message: "Please log in again to access this feature.",
+          },
+        });
+      } else {
+        setError(
+          "An error occurred while fetching the summary. Please try again."
+        );
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -50,10 +65,10 @@ export default function VideoById() {
     <section className="flex flex-col items-center p-8">
       <h1 className="text-2xl font-bold mb-4">AI Summary for Video ID</h1>
 
-      <input
+      <Input
         type="text"
         placeholder="Enter Video ID"
-        className="w-full max-w-2xl mb-4 p-2 border border-gray-300 rounded"
+        className="w-full max-w-2xl mb-4"
         value={videoId}
         onChange={(e) => setVideoId(e.target.value)}
         required
@@ -66,8 +81,12 @@ export default function VideoById() {
         onChange={(e) => setPrompt(e.target.value)}
       />
 
-      <Button className="bg-blue-500 text-white" onClick={handleSubmit}>
-        Submit
+      <Button
+        className="bg-blue-500 text-white"
+        onClick={handleSubmit}
+        disabled={isLoading}
+      >
+        {isLoading ? "Processing..." : "Get Summary"}
       </Button>
 
       {error && <p className="text-red-500 mt-4">{error}</p>}
@@ -78,6 +97,13 @@ export default function VideoById() {
           <p className="text-gray-700">{summary}</p>
         </div>
       )}
+
+      <Button
+        className="bg-gray-500 text-white mt-4"
+        onClick={() => navigate("/videos")}
+      >
+        Back to Videos
+      </Button>
     </section>
   );
 }
