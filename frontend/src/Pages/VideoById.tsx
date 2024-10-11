@@ -68,7 +68,7 @@ export default function VideoById() {
       <Input
         type="text"
         placeholder="Enter Video ID"
-        className="w-full max-w-2xl mb-4"
+        className="w-full max-w-2xl mb-4 p-2 border border-gray-300 rounded"
         value={videoId}
         onChange={(e) => setVideoId(e.target.value)}
         required
