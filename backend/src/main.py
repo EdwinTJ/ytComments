@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request,Depends
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -23,11 +23,13 @@ from config import (
     GOOGLE_CLIENT_ID,
     YOUTUBE_API_KEY,
 )
+# DB
+from .database.models import User
+from sqlalchemy.orm import Session
 
-import logging
+from databases import Database
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+#### FASTAPI INIT ####
 
 app = FastAPI()
 
@@ -39,6 +41,50 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET_KEY)
+######
+class UserData(BaseModel):
+    name: str
+    email: str
+    channel_id: str
+    access_token: str
+    refresh_token: str
+    token_expiry: datetime
+#### DATABASE ########
+DATABASE_URL = "postgresql://admin:admin@localhost/projectyt"
+
+database = Database(DATABASE_URL)
+# Update your FastAPI app setup
+app.add_event_handler("startup", database.connect)
+app.add_event_handler("shutdown", database.disconnect)
+
+################################
+### DB Operations#####
+async def create_user(db: Session, user:UserData):
+    db_user = User(**user.dict())
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+async def get_user_by_email(db: Session, email: str):
+    return db.query(User).filter(User.email == email).first()
+
+async def get_user_by_token(db: Session, token: str):
+    return db.query(User).filter(User.access_token == token).first()
+
+async def update_user_token(db: Session, user: User, access_token: str, token_expiry: datetime):
+    user.access_token = access_token
+    user.token_expiry = token_expiry
+    db.commit()
+    db.refresh(user)
+    return user
+###################
+
+
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # Allow HTTP traffic for local dev
 
@@ -64,13 +110,7 @@ flow = Flow.from_client_config(
     redirect_uri=GOOGLE_REDIRECT_URI
 )
 
-class UserData(BaseModel):
-    name: str
-    email: str
-    channel_id: str
-    access_token: str
-    refresh_token: str
-    token_expiry: datetime
+
 
 user_data_store = {} 
 
@@ -80,7 +120,7 @@ def login_with_google():
     return RedirectResponse(authorization_url)
 
 @app.get("/auth/callback")
-async def auth_callback(code: str):
+async def auth_callback(code: str, db: Session = Depends(get_db)):
     flow.fetch_token(code=code)
     credentials = flow.credentials
 
@@ -92,23 +132,25 @@ async def auth_callback(code: str):
 
     youtube_service = build("youtube", "v3", credentials=credentials)
     channel_response = youtube_service.channels().list(mine=True, part="snippet,contentDetails").execute()
-
     if not channel_response.get("items"):
         raise HTTPException(status_code=404, detail="No YouTube channel found")
 
     channel_id = channel_response["items"][0]["id"]
+    user = await get_user_by_email(db,email)
+    if user:
+        user = await update_user_token(db,user,credentials.token,credentials.expiry)
+    else:
+        user_data = UserData(
+            name=name,
+            email=email,
+            channel_id=channel_id,
+            access_token=credentials.token,
+            refresh_token=credentials.refresh_token,
+            token_expiry=credentials.expiry
+        )
+        user =await create_user(db,user_data)
 
-    user_data = UserData(
-        name=name,
-        email=email,
-        channel_id=channel_id,
-        access_token=credentials.token,
-        refresh_token=credentials.refresh_token,
-        token_expiry=credentials.expiry
-    )
-    user_data_store[email] = user_data
-
-    redirect_url = f"http://localhost:5173/?name={name}&email={email}&channel_id={channel_id}&access_token={credentials.token}&refresh_token={credentials.refresh_token}"
+    redirect_url = f"http://localhost:5173/?name={user.name}&email={user.email}&channel_id={user.channel_id}&access_token={user.access_token}&refresh_token={user.refresh_token}"
     return RedirectResponse(redirect_url)
 
 def refresh_access_token(refresh_token):
@@ -124,7 +166,7 @@ def refresh_access_token(refresh_token):
     return credentials.token, credentials.expiry
 
 @app.post("/api/refresh_token")
-async def refresh_token(request: Request):
+async def refresh_token(request: Request, db: Session = Depends(get_db)):
     logger.info("Entering /api/refresh_token endpoint")
     body = await request.json()
     refresh_token = body.get("refresh_token")
@@ -151,7 +193,13 @@ async def refresh_token(request: Request):
         else:
             logger.error("User not found for the given refresh token")
         
+        user = await get_user_by_token(db, refresh_token)
+        if user:
+            user = await update_user_token(db, user, credentials.token, credentials.expiry)
+        else:
+            raise HTTPException(status_code=404, detail="User not found")
         return JSONResponse(content={"access_token": credentials.token})
+
     except Exception as e:
         logger.error(f"Error refreshing token: {str(e)}")
         raise HTTPException(status_code=400, detail="Token refresh failed")
