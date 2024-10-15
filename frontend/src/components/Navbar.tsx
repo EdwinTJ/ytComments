@@ -6,17 +6,20 @@ import {
   LogOutIcon,
   Youtube,
 } from "lucide-react";
-
+import { logout } from "../api";
 export default function Navbar() {
   const isAuthenticated = localStorage.getItem("token");
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userData");
-    navigate("/");
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/");
+    } catch (error) {
+      console.error("Error during logout:", error);
+      navigate("/");
+    }
   };
-
   if (!isAuthenticated) {
     return null;
   }

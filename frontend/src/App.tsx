@@ -16,7 +16,7 @@ const App = () => {
     if (name && email && channel_id && access_token && refresh_token) {
       const userDataObj = { name, email, channel_id };
       localStorage.setItem("userData", JSON.stringify(userDataObj));
-      localStorage.setItem("token", access_token);
+      localStorage.setItem("accessToken", access_token);
       localStorage.setItem("refreshToken", refresh_token);
       navigate("/home", { replace: true });
     }

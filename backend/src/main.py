@@ -21,12 +21,11 @@ from config import (
     GOOGLE_REDIRECT_URI,
     GOOGLE_CLIENT_SECRET,
     GOOGLE_CLIENT_ID,
-    YOUTUBE_API_KEY,
 )
 # DB
-from .database.models import User
+from database.models import User
 from sqlalchemy.orm import Session
-
+from database.dependencies import get_db
 from databases import Database
 
 #### FASTAPI INIT ####
@@ -136,10 +135,14 @@ async def auth_callback(code: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="No YouTube channel found")
 
     channel_id = channel_response["items"][0]["id"]
-    user = await get_user_by_email(db,email)
+    user = await get_user_by_email(db, email)
     if user:
-        user = await update_user_token(db,user,credentials.token,credentials.expiry)
+        print(f"user exists \n")
+        user = await update_user_token(db, user, credentials.token, credentials.expiry)
+        print(user)
+        print(f"\n")
     else:
+        print(f"user data else \n")
         user_data = UserData(
             name=name,
             email=email,
@@ -148,11 +151,12 @@ async def auth_callback(code: str, db: Session = Depends(get_db)):
             refresh_token=credentials.refresh_token,
             token_expiry=credentials.expiry
         )
-        user =await create_user(db,user_data)
+        user = await create_user(db, user_data)
 
     redirect_url = f"http://localhost:5173/?name={user.name}&email={user.email}&channel_id={user.channel_id}&access_token={user.access_token}&refresh_token={user.refresh_token}"
     return RedirectResponse(redirect_url)
 
+#######
 def refresh_access_token(refresh_token):
     credentials = Credentials(
         token=None,
@@ -165,6 +169,9 @@ def refresh_access_token(refresh_token):
     credentials.refresh(GoogleRequest())
     return credentials.token, credentials.expiry
 
+async def get_user_by_refresh_token(db: Session, refresh_token: str):
+    return db.query(User).filter(User.refresh_token == refresh_token).first()
+#####
 @app.post("/api/refresh_token")
 async def refresh_token(request: Request, db: Session = Depends(get_db)):
     logger.info("Entering /api/refresh_token endpoint")
@@ -184,19 +191,12 @@ async def refresh_token(request: Request, db: Session = Depends(get_db)):
         )
         credentials.refresh(GoogleRequest())
         
-        # Update user data in storage
-        user_data = next((u for u in user_data_store.values() if u.refresh_token == refresh_token), None)
-        if user_data:
-            user_data.access_token = credentials.token
-            user_data.token_expiry = credentials.expiry
-            logger.info(f"Token refreshed for user: {user_data.email}")
-        else:
-            logger.error("User not found for the given refresh token")
-        
-        user = await get_user_by_token(db, refresh_token)
+        user = await get_user_by_refresh_token(db, refresh_token)
         if user:
             user = await update_user_token(db, user, credentials.token, credentials.expiry)
+            logger.info(f"Token refreshed for user: {user.email}")
         else:
+            logger.error("User not found for the given refresh token")
             raise HTTPException(status_code=404, detail="User not found")
         return JSONResponse(content={"access_token": credentials.token})
 
@@ -205,7 +205,7 @@ async def refresh_token(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Token refresh failed")
     
 @app.get("/api/videos")
-async def get_videos(request: Request):
+async def get_videos(request: Request, db: Session = Depends(get_db)):
     logger.info("Entering /api/videos endpoint")
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -214,21 +214,21 @@ async def get_videos(request: Request):
     
     token = auth_header.split(" ")[1]
     logger.info(f"Received token: {token[:10]}...")
-    user_data = next((u for u in user_data_store.values() if u.access_token == token), None)
+    user = await get_user_by_token(db, token)
     
-    if not user_data:
+    if not user:
         logger.error("Invalid token - user not found")
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    logger.info(f"User found: {user_data.email}")
+    logger.info(f"User found: {user.email}")
 
     # Check if token is expired
-    if datetime.utcnow() > user_data.token_expiry:
+    if datetime.utcnow() > user.token_expiry:
         logger.error("Token expired")
         raise HTTPException(status_code=401, detail="Token expired")
 
     try:
-        videos = get_channel_videos(user_data.channel_id)
+        videos = get_channel_videos(user.channel_id)
         if not videos:
             logger.warning("No videos found or error occurred")
             return JSONResponse(content={"videos": [], "message": "No videos found or error occurred"})
@@ -238,34 +238,35 @@ async def get_videos(request: Request):
         logger.error(f"Error fetching videos: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch videos: {str(e)}")
 
+
 @app.get("/api/user")
-async def get_user_info(request: Request):
+async def get_user_info(request: Request, db: Session = Depends(get_db)):
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Invalid or missing token")
     
     token = auth_header.split(" ")[1]
-    user_data = next((u for u in user_data_store.values() if u.access_token == token), None)
+    user = await get_user_by_token(db, token)
     
-    if not user_data:
+    if not user:
         raise HTTPException(status_code=401, detail="Invalid token")
 
     return JSONResponse(content={
-        "name": user_data.name,
-        "email": user_data.email,
-        "channel_id": user_data.channel_id
+        "name": user.name,
+        "email": user.email,
+        "channel_id": user.channel_id
     })
 
 @app.get("/api/video/{video_id}/comments")
-async def get_comments(video_id: str, request: Request):
+async def get_comments(video_id: str, request: Request, db: Session = Depends(get_db)):
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Invalid or missing token")
     
     token = auth_header.split(" ")[1]
-    user_data = next((u for u in user_data_store.values() if u.access_token == token), None)
+    user = await get_user_by_token(db, token)
     
-    if not user_data:
+    if not user:
         raise HTTPException(status_code=401, detail="Invalid token")
 
     try:
@@ -275,15 +276,15 @@ async def get_comments(video_id: str, request: Request):
         raise HTTPException(status_code=400, detail="Failed to fetch comments")
 
 @app.post("/api/summarize_comments")
-async def summarize_comments(request: Request):
+async def summarize_comments(request: Request, db: Session = Depends(get_db)):
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Invalid or missing token")
     
     token = auth_header.split(" ")[1]
-    user_data = next((u for u in user_data_store.values() if u.access_token == token), None)
+    user = await get_user_by_token(db, token)
     
-    if not user_data:
+    if not user:
         raise HTTPException(status_code=401, detail="Invalid token")
 
     body = await request.json()
@@ -319,14 +320,16 @@ async def summarize_comments(request: Request):
         raise HTTPException(status_code=400, detail=f"Failed to summarize comments: {str(e)}")
 
 @app.get("/logout")
-async def logout(request: Request):
+async def logout(request: Request, db: Session = Depends(get_db)):
     auth_header = request.headers.get("Authorization")
     if auth_header and auth_header.startswith("Bearer "):
         token = auth_header.split(" ")[1]
-        user_data = next((u for u in user_data_store.values() if u.access_token == token), None)
-        if user_data:
-            del user_data_store[user_data.email]
+        user = await get_user_by_token(db, token)
+        if user:
+            # You might want to invalidate the token here or perform any other cleanup
+            pass
     return JSONResponse(content={"message": "Logged out successfully"})
+
 
 if __name__ == "__main__":
     import uvicorn

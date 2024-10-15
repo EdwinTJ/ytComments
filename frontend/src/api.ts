@@ -9,9 +9,28 @@ const api = axios.create({
   },
 });
 
+export const handleInsufficientPermissions = () => {
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("userData");
+  window.location.href = "/login";
+};
+
+export const fetchUserData = async () => {
+  try {
+    const response = await api.get("/api/user");
+    const userData = response.data;
+    localStorage.setItem("userData", JSON.stringify(userData));
+    return userData;
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    throw error;
+  }
+};
+
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("accessToken");
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
@@ -31,6 +50,16 @@ api.interceptors.response.use(
   },
   async (error) => {
     console.error("Response error:", error.response?.status, error.config.url);
+
+    if (
+      error.response?.status === 403 &&
+      error.response?.data?.detail ===
+        "Insufficient authentication scopes. Please log in again."
+    ) {
+      handleInsufficientPermissions();
+      return Promise.reject(error);
+    }
+
     const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
@@ -41,17 +70,15 @@ api.interceptors.response.use(
           refresh_token: refreshToken,
         });
         const { access_token } = response.data;
-        localStorage.setItem("token", access_token);
+        localStorage.setItem("accessToken", access_token);
         api.defaults.headers["Authorization"] = `Bearer ${access_token}`;
         originalRequest.headers["Authorization"] = `Bearer ${access_token}`;
         console.log("Token refreshed, retrying original request");
+        await fetchUserData(); // Update user data after successful token refresh
         return api(originalRequest);
       } catch (refreshError) {
         console.error("Error refreshing token:", refreshError);
-        localStorage.removeItem("token");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("userData");
-        window.location.href = "/login";
+        handleInsufficientPermissions();
         return Promise.reject(refreshError);
       }
     }
@@ -78,12 +105,10 @@ export const fetchVideos = async () => {
 export const logout = async () => {
   try {
     await api.get("/logout");
-    localStorage.removeItem("token");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("userData");
+    handleInsufficientPermissions();
   } catch (error) {
     console.error("Error logging out:", error);
-    throw error;
+    handleInsufficientPermissions();
   }
 };
 
