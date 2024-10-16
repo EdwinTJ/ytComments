@@ -12,7 +12,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     const storedUserData = localStorage.getItem("userData");
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("accessToken");
     if (storedUserData && token) {
       setUserData(JSON.parse(storedUserData));
       fetchUserVideos();

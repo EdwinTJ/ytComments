@@ -15,7 +15,7 @@ export default function VideoById() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("accessToken");
     if (!token) {
       navigate("/login");
     }

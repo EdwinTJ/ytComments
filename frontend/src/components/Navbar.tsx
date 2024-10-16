@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { logout } from "../api";
 export default function Navbar() {
-  const isAuthenticated = localStorage.getItem("token");
+  const isAuthenticated = localStorage.getItem("accessToken");
   const navigate = useNavigate();
 
   const handleLogout = async () => {
