@@ -34,7 +34,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 PORT = int(os.getenv('PORT', 8000))
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://yt-comments-nine.vercel.app/')
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://yt-comments-nine.vercel.app")
 
 #### FASTAPI INIT ####
 
@@ -42,10 +42,21 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://yt-comments-nine.vercel.app/"],
+   allow_origins=[
+        FRONTEND_URL,
+        "https://yt-comments-nine.vercel.app",
+        "http://localhost:5173",  
+    ],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=[
+        "Content-Type",
+        "Authorization",
+        "Accept",
+        "Origin",
+        "X-Requested-With",
+    ],
+    expose_headers=["*"],
 )
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET_KEY)
 ######
@@ -294,6 +305,9 @@ async def get_comments(video_id: str, request: Request, db: Session = Depends(ge
     except Exception as e:
         raise HTTPException(status_code=400, detail="Failed to fetch comments")
 
+@app.options("/api/summarize_comments")
+async def options_summarize_comments():
+    return {"message": "OK"}
 @app.post("/api/summarize_comments")
 async def summarize_comments(request: Request, db: Session = Depends(get_db)):
     auth_header = request.headers.get("Authorization")
