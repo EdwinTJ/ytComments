@@ -348,8 +348,3 @@ async def logout(request: Request, db: Session = Depends(get_db)):
             # You might want to invalidate the token here or perform any other cleanup
             pass
     return JSONResponse(content={"message": "Logged out successfully"})
-
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host='0.0.0.0', port=8000, log_level="debug")
