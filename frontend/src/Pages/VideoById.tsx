@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,8 +42,9 @@ export default function VideoById() {
       } else {
         setError("Failed to fetch summary. Please try again.");
       }
-    } catch (error) {
-      console.error("Error fetching summary:", error);
+    } catch (err) {
+      console.error("Error fetching summary:", err);
+      const error = err as { response?: { status: number } }; // Type assertion
       if (error.response && error.response.status === 401) {
         clearStoredTokens();
         navigate("/login", {

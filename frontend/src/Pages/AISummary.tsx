@@ -1,18 +1,22 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { clearStoredTokens } from "../utils/auth";
 import api from "../api";
 
+interface LocationState {
+  title: string;
+}
+
 export default function AISummary() {
   const { videoId } = useParams<{ videoId: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const { title } = location.state as { title: string };
-  const [prompt, setPrompt] = useState("");
+  const { title } = location.state as LocationState; // Use type assertion here
+  const [prompt, setPrompt] = useState<string>(""); // Specify type for prompt
   const [summary, setSummary] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -37,19 +41,25 @@ export default function AISummary() {
       } else {
         setError("Failed to fetch summary. Please try again.");
       }
-    } catch (error) {
+    } catch (error: unknown) {
+      // Specify error type as unknown
       console.error("Error fetching summary:", error);
-      if (error.response && error.response.status === 401) {
-        clearStoredTokens();
-        navigate("/login", {
-          state: {
-            message: "Please log in again to access this feature.",
-          },
-        });
+      if (error instanceof Error) {
+        // Check if error is an instance of Error
+        if ((error as any).response && (error as any).response.status === 401) {
+          clearStoredTokens();
+          navigate("/login", {
+            state: {
+              message: "Please log in again to access this feature.",
+            },
+          });
+        } else {
+          setError(
+            "An error occurred while fetching the summary. Please try again."
+          );
+        }
       } else {
-        setError(
-          "An error occurred while fetching the summary. Please try again."
-        );
+        setError("An unknown error occurred.");
       }
     } finally {
       setIsLoading(false);

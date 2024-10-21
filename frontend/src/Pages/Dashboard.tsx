@@ -4,10 +4,28 @@ import { fetchVideos } from "../api";
 import VideoCard from "@/components/VideoCard";
 import { Button } from "@/components/ui/button";
 
+// Define the types for your state
+interface UserData {
+  name: string;
+  email: string;
+  channel_id: string;
+}
+
+interface Video {
+  videoId: string;
+  thumbnail: string;
+  title: string;
+  description?: string;
+}
+interface AxiosError {
+  response?: {
+    status: number;
+  };
+}
 const Dashboard = () => {
-  const [userData, setUserData] = useState(null);
-  const [videos, setVideos] = useState([]);
-  const [error, setError] = useState(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -27,18 +45,26 @@ const Dashboard = () => {
       setVideos(fetchedVideos);
       if (fetchedVideos.length === 0) {
         setError("No videos found for this channel.");
+      } else {
+        setError(null); // Clear error if videos are found
       }
-    } catch (error) {
+    } catch (err: unknown) {
+      // Use a more specific type
+      const error = err as AxiosError; // Type assertion
+
       console.error("Error fetching videos:", error);
       if (error.response && error.response.status === 401) {
         setError("Authentication failed. Please log in again.");
         navigate("/login");
       } else {
-        setError(`Failed to fetch videos. Error: ${error.message}`);
+        setError(
+          `Failed to fetch videos. Error: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
+        );
       }
     }
   };
-
   if (!userData) {
     return <div>Loading...</div>;
   }

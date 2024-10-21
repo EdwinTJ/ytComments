@@ -11,8 +11,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+// Define an interface for user data
+interface UserData {
+  name: string;
+  email: string;
+  channel_id: string;
+}
+
 const Account = () => {
-  const [userData, setUserData] = useState(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
@@ -38,7 +45,7 @@ const Account = () => {
   };
 
   if (!userData) {
-    return null; // or a loading spinner
+    return null;
   }
 
   return (

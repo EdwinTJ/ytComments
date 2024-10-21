@@ -9,7 +9,19 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-const VideoCard = ({ video }) => {
+// Define the Video type
+interface Video {
+  videoId: string;
+  thumbnail: string;
+  title: string;
+  description?: string;
+}
+
+interface VideoCardProps {
+  video: Video;
+}
+
+const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
   const navigate = useNavigate();
 
   return (
