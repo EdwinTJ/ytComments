@@ -13,7 +13,15 @@ export default function HomePage() {
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Revolutionize your YouTube experience with AI-powered insights and
-            analytics.
+            analytics. Thank you for joining a community of forward-thinking
+            content creators! Our AI-powered tools are here to help you unlock
+            insights from your YouTube comments and generate fresh ideas for
+            your next video. With [App Name], you can: Analyze comments to spot
+            trends and understand your audience's sentiment. Get AI-powered
+            answers to questions like, "What are the comments saying?" and "What
+            should my next video be about?" We're excited to help you take your
+            content to the next level with actionable insights and creative
+            inspiration!
           </p>
         </section>
 

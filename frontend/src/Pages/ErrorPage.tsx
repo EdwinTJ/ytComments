@@ -12,7 +12,7 @@ const ErrorPage = () => {
       <h1>Authentication Error</h1>
       <p>Error type: {error}</p>
       <p>Error message: {message}</p>
-      <a href="/">Try again</a>
+      <a href="/login">Try again</a>
     </div>
   );
 };

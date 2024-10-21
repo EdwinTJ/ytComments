@@ -13,7 +13,7 @@ export const handleInsufficientPermissions = () => {
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
   localStorage.removeItem("userData");
-  window.location.href = "/login";
+  window.location.href = "/";
 };
 
 export const fetchUserData = async () => {
