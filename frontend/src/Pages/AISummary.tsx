@@ -21,7 +21,7 @@ export default function AISummary() {
 
   useEffect(() => {
     // Check if the user is authenticated
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("accessToken");
     if (!token) {
       navigate("/login");
     }

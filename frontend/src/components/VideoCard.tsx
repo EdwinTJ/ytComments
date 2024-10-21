@@ -10,20 +10,22 @@ import {
 import { Button } from "@/components/ui/button";
 
 // Define the Video type
-interface Video {
-  videoId: string;
-  thumbnail: string;
-  title: string;
-  description?: string;
-}
-
 interface VideoCardProps {
-  video: Video;
+  video: {
+    videoId: string;
+    thumbnail: string;
+    title: string;
+    description?: string;
+  };
 }
 
 const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
   const navigate = useNavigate();
-
+  const handleAISummaryClick = () => {
+    navigate(`/aisummary/${video.videoId}`, {
+      state: { title: video.title },
+    });
+  };
   return (
     <section>
       <Card
@@ -47,12 +49,8 @@ const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
         </CardContent>
         <CardFooter className="flex flex-col sm:flex-row justify-between p-4 space-y-2 sm:space-y-0 sm:space-x-2">
           <Button
-            className="w-full bg-green-500 text-white"
-            onClick={() =>
-              navigate(`/aisummary/${video.videoId}`, {
-                state: { title: video.title },
-              })
-            }
+            onClick={handleAISummaryClick}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
             Get AI Summary
           </Button>
