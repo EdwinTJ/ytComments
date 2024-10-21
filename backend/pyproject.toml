@@ -3,7 +3,7 @@ name = "ytcomments"
 version = "0.1.0"
 description = "InsightFlow"
 authors = ["EdwinTJ <edwin16x@gmail.com>"]
-
+packages = [{include = "src"}] 
 [tool.poetry.dependencies]
 python = "^3.10"
 google-api-python-client = "^2.143.0"
