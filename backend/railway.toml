@@ -3,7 +3,8 @@ builder = "NIXPACKS"
 buildCommand = "pip install poetry && poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi"
 
 [deploy]
-startCommand = "poetry run uvicorn src.main:app --host 0.0.0.0 --port $PORT"
-healthcheckPath = "/docs"
+startCommand = "poetry run uvicorn src.main:app --host 0.0.0.0 --port $PORT --log-level debug"
+healthcheckPath = "/health"
+healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10

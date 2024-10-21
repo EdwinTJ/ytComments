@@ -2,7 +2,7 @@
 from openai import OpenAI
 
 # Environment variable
-from config import OPENAI_API_KEY
+from src.config import OPENAI_API_KEY
 def summarize_comments(comments, prompt):
     client = OpenAI(api_key=OPENAI_API_KEY)
     
