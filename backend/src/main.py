@@ -12,21 +12,23 @@ from pydantic import BaseModel
 from datetime import datetime
 # OpenAI
 import openai
-from open_ai import summarize_comments as openai_summarize_comments
+from src.open_ai import summarize_comments as openai_summarize_comments
 # New import for YouTube functions
-from youtube import get_video_comments, get_channel_videos
+from src.youtube import get_video_comments, get_channel_videos
 # Load environment variables
-from config import (
+from src.config import (
     SESSION_SECRET_KEY,
     GOOGLE_REDIRECT_URI,
     GOOGLE_CLIENT_SECRET,
     GOOGLE_CLIENT_ID,
 )
 # DB
-from database.models import User
+from src.database.models import User
 from sqlalchemy.orm import Session
-from database.dependencies import get_db
+from src.database.dependencies import get_db
 from databases import Database
+PORT = int(os.getenv('PORT', 8000))
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://yt-comments-nine.vercel.app/')
 
 #### FASTAPI INIT ####
 
@@ -34,7 +36,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["https://yt-comments-nine.vercel.app/"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -49,7 +51,7 @@ class UserData(BaseModel):
     refresh_token: str
     token_expiry: datetime
 #### DATABASE ########
-DATABASE_URL = "postgresql://admin:admin@localhost/projectyt"
+DATABASE_URL = os.getenv('DATABASE_URL')
 
 database = Database(DATABASE_URL)
 # Update your FastAPI app setup
@@ -153,7 +155,7 @@ async def auth_callback(code: str, db: Session = Depends(get_db)):
         )
         user = await create_user(db, user_data)
 
-    redirect_url = f"http://localhost:5173/?name={user.name}&email={user.email}&channel_id={user.channel_id}&access_token={user.access_token}&refresh_token={user.refresh_token}"
+    redirect_url = f"{FRONTEND_URL}/?name={user.name}&email={user.email}&channel_id={user.channel_id}&access_token={user.access_token}&refresh_token={user.refresh_token}"
     return RedirectResponse(redirect_url)
 
 #######

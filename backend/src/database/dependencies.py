@@ -1,6 +1,4 @@
-from fastapi import Depends
-from sqlalchemy.orm import Session
-from .database import SessionLocal
+from src.database.database import SessionLocal
 
 # Dependency
 def get_db():

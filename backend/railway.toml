@@ -1,0 +1,21 @@
+# railway.toml
+[
+build
+]
+builder = "NIXPACKS"
+watchPatterns = [
+    "src/**/*.py",
+    "pyproject.toml",
+    "poetry.lock"
+]
+
+[
+deploy
+]
+startCommand = "poetry run uvicorn src.main:app --host 0.0.0.0 --port $PORT"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+healthcheckPath = "/docs"
+numReplicas = 1
+region = "us-west"
+sleepApplication = false

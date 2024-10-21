@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "ytcomments"
 version = "0.1.0"
-description = ""
+description = "InsightFlow"
 authors = ["EdwinTJ <edwin16x@gmail.com>"]
 
 [tool.poetry.dependencies]
