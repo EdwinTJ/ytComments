@@ -10,6 +10,9 @@ from googleapiclient.errors import HttpError
 import os
 from pydantic import BaseModel
 from datetime import datetime
+import logging
+logger = logging.getLogger(__name__)
+
 # OpenAI
 import openai
 from src.open_ai import summarize_comments as openai_summarize_comments
@@ -27,6 +30,9 @@ from src.database.models import User
 from sqlalchemy.orm import Session
 from src.database.dependencies import get_db
 from databases import Database
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 PORT = int(os.getenv('PORT', 8000))
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://yt-comments-nine.vercel.app/')
 
@@ -51,8 +57,19 @@ class UserData(BaseModel):
     refresh_token: str
     token_expiry: datetime
 #### DATABASE ########
-DATABASE_URL = os.getenv('DATABASE_URL')
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
+logger.info(f"Initializing database connection...")
+try:
+    engine = create_engine(DATABASE_URL)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    Base = declarative_base()
+    logger.info("Database connection initialized successfully")
+except Exception as e:
+    logger.error(f"Failed to initialize database: {str(e)}")
+    raise
 database = Database(DATABASE_URL)
 # Update your FastAPI app setup
 app.add_event_handler("startup", database.connect)
