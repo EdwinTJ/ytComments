@@ -70,6 +70,7 @@ app.add_middleware(
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET_KEY)
 
 #### DATABASE ########
+PORT = int(os.getenv('PORT', 8000))
 
 database = Database(DATABASE_URL)
 # Update your FastAPI app setup
