@@ -1,9 +1,10 @@
 import axios from "axios";
+import { getEnvConfig } from "./config/env";
 
-const API_BASE_URL = "https://ytcomments-hs2i.onrender.com";
+const { VITE_API_URL } = getEnvConfig();
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: VITE_API_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -66,7 +67,7 @@ api.interceptors.response.use(
       try {
         console.log("Attempting token refresh");
         const refreshToken = localStorage.getItem("refreshToken");
-        const response = await axios.post(`${API_BASE_URL}/api/refresh_token`, {
+        const response = await axios.post(`${VITE_API_URL}/api/refresh_token`, {
           refresh_token: refreshToken,
         });
         const { access_token } = response.data;
@@ -87,7 +88,7 @@ api.interceptors.response.use(
 );
 
 export const loginWithGoogle = () => {
-  window.location.href = `${API_BASE_URL}/auth/login`;
+  window.location.href = `${VITE_API_URL}/auth/login`;
 };
 
 export const fetchVideos = async () => {

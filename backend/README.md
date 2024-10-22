@@ -10,7 +10,7 @@ Thumbnail: https://i.ytimg.com/vi/RHqS5kXSmGg/hqdefault.jpg
 Description: Esta página te explica Patrones de Diseño en Programación, totalmente en Español! JavaScript, Python, PHP, Golang o ...
 
 uvicorn main:app --reload
-
+ENVIRONMENT=development uvicorn src.main:app --reload
 fastapi dev main.py
 
 ## CURL
