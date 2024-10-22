@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState } from "react";
 import { useAuth } from "./AuthContext";
 import { useNavigate } from "react-router-dom";
+import axios, { AxiosError } from "axios";
 
 interface SummaryContextType {
   summary: string | null;
@@ -38,7 +39,7 @@ export const SummaryProvider: React.FC<{ children: React.ReactNode }> = ({
   const getSummary = async (
     videoId: string,
     prompt: string,
-    title?: string
+    _title?: string
   ) => {
     setIsLoading(true);
     setError(null);
@@ -56,16 +57,21 @@ export const SummaryProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     } catch (err) {
       console.error("Error fetching summary:", err);
-      if (err.response?.status === 401) {
-        navigate("/login", {
-          state: {
-            message: "Please log in again to access this feature.",
-          },
-        });
+      if (axios.isAxiosError(err)) {
+        const axiosError = err as AxiosError;
+        if (axiosError.response?.status === 401) {
+          navigate("/login", {
+            state: {
+              message: "Please log in again to access this feature.",
+            },
+          });
+        } else {
+          setError(
+            "An error occurred while fetching the summary. Please try again."
+          );
+        }
       } else {
-        setError(
-          "An error occurred while fetching the summary. Please try again."
-        );
+        setError("An unexpected error occurred. Please try again.");
       }
     } finally {
       setIsLoading(false);
