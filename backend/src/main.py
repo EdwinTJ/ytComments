@@ -2,16 +2,19 @@ from fastapi import FastAPI, HTTPException, Request,Depends
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
+### Google ### 
 from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request as GoogleRequest
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+
 import os
-from pydantic import BaseModel
 from datetime import datetime
 import logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 # OpenAI
 import openai
@@ -24,17 +27,23 @@ from src.config import (
     GOOGLE_REDIRECT_URI,
     GOOGLE_CLIENT_SECRET,
     GOOGLE_CLIENT_ID,
+    DATABASE_URL,
+    FRONTEND_URL,
 )
 # DB
-from src.database.models import User
 from sqlalchemy.orm import Session
 from src.database.dependencies import get_db
 from databases import Database
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-PORT = int(os.getenv('PORT', 8000))
-FRONTEND_URL = os.getenv("FRONTEND_URL", "https://yt-comments-nine.vercel.app")
+
+### DB Operations ###
+from src.utils.db_operations import(
+    create_user,get_user_by_email,
+    get_user_by_token,
+    update_user_token,
+    get_user_by_refresh_token)
+
+### Schemas ###
+from src.utils.schemas import UserData
 
 #### FASTAPI INIT ####
 
@@ -59,61 +68,13 @@ app.add_middleware(
     expose_headers=["*"],
 )
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET_KEY)
-######
-class UserData(BaseModel):
-    name: str
-    email: str
-    channel_id: str
-    access_token: str
-    refresh_token: str
-    token_expiry: datetime
-#### DATABASE ########
-DATABASE_URL = os.getenv("DATABASE_URL")
-if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-logger.info(f"Initializing database connection...")
-try:
-    engine = create_engine(DATABASE_URL)
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    Base = declarative_base()
-    logger.info("Database connection initialized successfully")
-except Exception as e:
-    logger.error(f"Failed to initialize database: {str(e)}")
-    raise
+#### DATABASE ########
+
 database = Database(DATABASE_URL)
 # Update your FastAPI app setup
 app.add_event_handler("startup", database.connect)
 app.add_event_handler("shutdown", database.disconnect)
-
-################################
-### DB Operations#####
-async def create_user(db: Session, user:UserData):
-    db_user = User(**user.dict())
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
-
-async def get_user_by_email(db: Session, email: str):
-    return db.query(User).filter(User.email == email).first()
-
-async def get_user_by_token(db: Session, token: str):
-    return db.query(User).filter(User.access_token == token).first()
-
-async def update_user_token(db: Session, user: User, access_token: str, token_expiry: datetime):
-    user.access_token = access_token
-    user.token_expiry = token_expiry
-    db.commit()
-    db.refresh(user)
-    return user
-###################
-
-
-import logging
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # Allow HTTP traffic for local dev
 
@@ -139,9 +100,6 @@ flow = Flow.from_client_config(
     redirect_uri=GOOGLE_REDIRECT_URI
 )
 
-
-
-user_data_store = {} 
 
 @app.get("/auth/login")
 def login_with_google():
@@ -186,22 +144,6 @@ async def auth_callback(code: str, db: Session = Depends(get_db)):
     redirect_url = f"{FRONTEND_URL}/?name={user.name}&email={user.email}&channel_id={user.channel_id}&access_token={user.access_token}&refresh_token={user.refresh_token}"
     return RedirectResponse(redirect_url)
 
-#######
-def refresh_access_token(refresh_token):
-    credentials = Credentials(
-        token=None,
-        refresh_token=refresh_token,
-        client_id=GOOGLE_CLIENT_ID,
-        client_secret=GOOGLE_CLIENT_SECRET,
-        token_uri="https://oauth2.googleapis.com/token"
-    )        
-    
-    credentials.refresh(GoogleRequest())
-    return credentials.token, credentials.expiry
-
-async def get_user_by_refresh_token(db: Session, refresh_token: str):
-    return db.query(User).filter(User.refresh_token == refresh_token).first()
-#####
 @app.post("/api/refresh_token")
 async def refresh_token(request: Request, db: Session = Depends(get_db)):
     logger.info("Entering /api/refresh_token endpoint")
@@ -308,6 +250,7 @@ async def get_comments(video_id: str, request: Request, db: Session = Depends(ge
 @app.options("/api/summarize_comments")
 async def options_summarize_comments():
     return {"message": "OK"}
+
 @app.post("/api/summarize_comments")
 async def summarize_comments(request: Request, db: Session = Depends(get_db)):
     auth_header = request.headers.get("Authorization")
