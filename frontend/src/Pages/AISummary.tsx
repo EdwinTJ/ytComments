@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { clearStoredTokens } from "../utils/auth";
-import api from "../api";
+import { useAuth } from "@/context/AuthContext";
+import { useSummary } from "@/context/SummaryContext";
 
 interface LocationState {
   title: string;
@@ -15,54 +15,16 @@ export default function AISummary() {
   const navigate = useNavigate();
   const { title } = location.state as LocationState; // Use type assertion here
   const [prompt, setPrompt] = useState<string>(""); // Specify type for prompt
-  const [summary, setSummary] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth();
+  const { summary, isLoading, error, getSummary } = useSummary();
 
-  useEffect(() => {
-    // Check if the user is authenticated
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      navigate("/login");
-    }
-  }, [navigate]);
-
-  const handleSubmit = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await api.post("/api/summarize_comments", {
-        video_id: videoId,
-        prompt,
-      });
-
-      if (response.data && response.data.summary) {
-        setSummary(response.data.summary);
-      } else {
-        setError("Failed to fetch summary. Please try again.");
-      }
-    } catch (error: unknown) {
-      // Specify error type as unknown
-      console.error("Error fetching summary:", error);
-      if (error instanceof Error) {
-        // Check if error is an instance of Error
-        if ((error as any).response && (error as any).response.status === 401) {
-          clearStoredTokens();
-          navigate("/login", {
-            state: {
-              message: "Please log in again to access this feature.",
-            },
-          });
-        } else {
-          setError(
-            "An error occurred while fetching the summary. Please try again."
-          );
-        }
-      } else {
-        setError("An unknown error occurred.");
-      }
-    } finally {
-      setIsLoading(false);
+  if (!isAuthenticated) {
+    navigate("/login");
+    return null;
+  }
+  const handleSubmit = () => {
+    if (videoId) {
+      getSummary(videoId, prompt, title);
     }
   };
 

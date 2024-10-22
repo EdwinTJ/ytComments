@@ -1,59 +1,43 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchVideos } from "../api";
 import VideoCard from "@/components/VideoCard";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/AuthContext";
+import axios from "axios";
 
 // Define the types for your state
-interface UserData {
-  name: string;
-  email: string;
-  channel_id: string;
-}
-
 interface Video {
   videoId: string;
   thumbnail: string;
   title: string;
   description?: string;
 }
-interface AxiosError {
-  response?: {
-    status: number;
-  };
-}
+
 const Dashboard = () => {
-  const [userData, setUserData] = useState<UserData | null>(null);
+  const { userData, api } = useAuth();
   const [videos, setVideos] = useState<Video[]>([]);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedUserData = localStorage.getItem("userData");
-    const token = localStorage.getItem("accessToken");
-    if (storedUserData && token) {
-      setUserData(JSON.parse(storedUserData));
-      fetchUserVideos();
-    } else {
+    if (!userData) {
       navigate("/login");
+    } else {
+      fetchUserVideos();
     }
-  }, [navigate]);
+  }, [userData, navigate]);
 
   const fetchUserVideos = async () => {
     try {
-      const fetchedVideos = await fetchVideos();
+      const response = await api.get("/api/videos");
+      const fetchedVideos = response.data.videos;
       setVideos(fetchedVideos);
-      if (fetchedVideos.length === 0) {
-        setError("No videos found for this channel.");
-      } else {
-        setError(null); // Clear error if videos are found
-      }
-    } catch (err: unknown) {
-      // Use a more specific type
-      const error = err as AxiosError; // Type assertion
-
+      setError(
+        fetchedVideos.length === 0 ? "No videos found for this channel." : null
+      );
+    } catch (error) {
       console.error("Error fetching videos:", error);
-      if (error.response && error.response.status === 401) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
         setError("Authentication failed. Please log in again.");
         navigate("/login");
       } else {
@@ -65,9 +49,6 @@ const Dashboard = () => {
       }
     }
   };
-  if (!userData) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <div className="p-8">

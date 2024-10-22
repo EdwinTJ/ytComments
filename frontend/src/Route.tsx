@@ -8,14 +8,30 @@ import Home from "./Pages/Home";
 import AISummary from "./Pages/AISummary";
 import VideoById from "./Pages/VideoById";
 import ErrorPage from "./Pages/ErrorPage";
+import { AuthProvider } from "./context/AuthContext";
+import { SummaryProvider } from "./context/SummaryContext";
+
+const ProviderWrapper = () => {
+  return (
+    <AuthProvider>
+      <SummaryProvider>
+        <App />
+      </SummaryProvider>
+    </AuthProvider>
+  );
+};
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <App />,
+    element: <ProviderWrapper />,
     children: [
       {
         path: "/",
+        element: <Login />,
+      },
+      {
+        path: "/login",
         element: <Login />,
       },
       {

@@ -1,65 +1,30 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { clearStoredTokens } from "../utils/auth";
-import api from "../api";
+import { useAuth } from "@/context/AuthContext";
+import { useSummary } from "@/context/SummaryContext";
 
 export default function VideoById() {
   const [videoId, setVideoId] = useState<string>("");
   const [prompt, setPrompt] = useState<string>("");
-  const [summary, setSummary] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const { summary, isLoading, error, setError, getSummary } = useSummary();
+
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      navigate("/login");
-    }
-  }, [navigate]);
+  if (!isAuthenticated) {
+    navigate("/login");
+    return null;
+  }
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!videoId.trim()) {
       setError("Please enter a valid Video ID.");
       return;
     }
-
-    setIsLoading(true);
-    setError(null);
-    setSummary(null);
-
-    try {
-      const response = await api.post("/api/summarize_comments", {
-        video_id: videoId,
-        prompt,
-      });
-
-      if (response.data && response.data.summary) {
-        setSummary(response.data.summary);
-      } else {
-        setError("Failed to fetch summary. Please try again.");
-      }
-    } catch (err) {
-      console.error("Error fetching summary:", err);
-      const error = err as { response?: { status: number } }; // Type assertion
-      if (error.response && error.response.status === 401) {
-        clearStoredTokens();
-        navigate("/login", {
-          state: {
-            message: "Please log in again to access this feature.",
-          },
-        });
-      } else {
-        setError(
-          "An error occurred while fetching the summary. Please try again."
-        );
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    getSummary(videoId, prompt);
   };
 
   return (
