@@ -47,6 +47,11 @@ SESSION_SECRET_KEY = os.getenv('SESSION_SECRET_KEY')
 # Database configuration
 DATABASE_URL = os.getenv('DATABASE_URL')
 
+# Front end URL
+FRONTEND_URL = os.getenv('FRONTEND_URL')
+
+PORT = os.getenv('PORT')
+
 # Validate required environment variables
 required_vars = [
     'YOUTUBE_API_KEY',

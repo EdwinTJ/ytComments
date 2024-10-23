@@ -1,9 +1,11 @@
 import { useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
+import { useAuth } from "./context/AuthContext";
 
 const App = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -14,13 +16,10 @@ const App = () => {
     const refresh_token = params.get("refresh_token");
 
     if (name && email && channel_id && access_token && refresh_token) {
-      const userDataObj = { name, email, channel_id };
-      localStorage.setItem("userData", JSON.stringify(userDataObj));
-      localStorage.setItem("accessToken", access_token);
-      localStorage.setItem("refreshToken", refresh_token);
+      login(name, email, channel_id, access_token, refresh_token);
       navigate("/home", { replace: true });
     }
-  }, [navigate]);
+  }, [navigate, login]);
 
   return (
     <div className="flex">

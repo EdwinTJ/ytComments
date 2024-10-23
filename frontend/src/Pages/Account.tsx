@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { logout } from "../api";
 import {
   Table,
   TableBody,
@@ -10,43 +9,28 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-// Define an interface for user data
-interface UserData {
-  name: string;
-  email: string;
-  channel_id: string;
-}
+import { useAuth } from "@/context/AuthContext";
 
 const Account = () => {
-  const [userData, setUserData] = useState<UserData | null>(null);
+  const { userData, logout } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedUserData = localStorage.getItem("userData");
-    if (storedUserData) {
-      setUserData(JSON.parse(storedUserData));
-    } else {
+    if (!userData) {
       navigate("/login");
     }
-  }, [navigate]);
+  }, [userData, navigate]);
 
   const handleLogout = async () => {
     try {
       await logout();
-      localStorage.removeItem("userData");
-      localStorage.removeItem("accessToken");
       navigate("/login");
     } catch (error) {
-      setError("Error");
+      setError("Error logging out");
       console.error("Error logging out:", error);
     }
   };
-
-  if (!userData) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">

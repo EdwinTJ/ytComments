@@ -6,9 +6,10 @@ import {
   LogOutIcon,
   Youtube,
 } from "lucide-react";
-import { logout } from "../api";
+import { useAuth } from "@/context/AuthContext";
+
 export default function Navbar() {
-  const isAuthenticated = localStorage.getItem("accessToken");
+  const { isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -20,6 +21,7 @@ export default function Navbar() {
       navigate("/");
     }
   };
+
   if (!isAuthenticated) {
     return null;
   }
