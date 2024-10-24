@@ -14,18 +14,18 @@ interface Video {
 }
 
 const Dashboard = () => {
-  const { userData, api } = useAuth();
+  const { api, isAuthenticated } = useAuth();
   const [videos, setVideos] = useState<Video[]>([]);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!userData) {
+    if (!isAuthenticated) {
       navigate("/login");
     } else {
       fetchUserVideos();
     }
-  }, [userData, navigate]);
+  }, [isAuthenticated, navigate]);
 
   const fetchUserVideos = async () => {
     try {
@@ -51,24 +51,26 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-6">Your YouTube Videos</h1>
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-      {videos.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {videos.map((video) => (
-            <VideoCard key={video.videoId} video={video} />
-          ))}
-        </div>
-      ) : (
-        <p>No videos found. Try uploading some videos to your channel!</p>
-      )}
-      <Button
-        onClick={() => navigate("/account")}
-        className="mt-8 bg-blue-500 text-white"
-      >
-        View Account
-      </Button>
+    <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200">
+      <div className="max-w-7xl mx-auto p-8">
+        <h1 className="text-3xl font-bold mb-8">Your YouTube Videos</h1>
+        {error && <p className="text-red-500 mb-4">{error}</p>}
+        {videos.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {videos.map((video) => (
+              <VideoCard key={video.videoId} video={video} />
+            ))}
+          </div>
+        ) : (
+          <p>No videos found. Try uploading some videos to your channel!</p>
+        )}
+        <Button
+          onClick={() => navigate("/account")}
+          className="mt-8 bg-blue-500 text-white"
+        >
+          View Account
+        </Button>
+      </div>
     </div>
   );
 };

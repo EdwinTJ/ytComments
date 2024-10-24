@@ -27,7 +27,7 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="p-4">
+    <nav className="p-4 border-b border-gray-200">
       <ul className="space-y-2">
         {isAuthenticated && (
           <>

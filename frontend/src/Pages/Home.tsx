@@ -1,94 +1,109 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { BarChart3, Brain, Lightbulb, TrendingUp } from "lucide-react";
+import { Brain, UserCircle, Video } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
-  const features = [
+  const pages = [
     {
-      icon: <BarChart3 className="w-8 h-8 mb-4 text-blue-500" />,
-      title: "Advanced Analytics",
-      description: "Gain deep insights into your YouTube performance",
+      icon: <Video className="w-10 h-10 mb-4 text-blue-500" />,
+      title: "Videos Dashboard",
+      description:
+        "View all your YouTube videos in one place. Get quick access to view counts, likes, and navigate to AI analysis.",
+      path: "/videos",
+      buttonText: "Go to Videos",
     },
     {
-      icon: <Brain className="w-8 h-8 mb-4 text-purple-500" />,
-      title: "AI-Powered Insights",
-      description: "Let AI analyze your comments and spot trends",
+      icon: <Brain className="w-10 h-10 mb-4 text-purple-500" />,
+      title: "Video Analysis by ID",
+      description:
+        "Enter any YouTube video ID to get AI-powered analysis of comments and engagement. Perfect for analyzing specific videos in detail.",
+      path: "/videoById",
+      buttonText: "Analyze Video",
     },
     {
-      icon: <Lightbulb className="w-8 h-8 mb-4 text-yellow-500" />,
-      title: "Content Inspiration",
-      description: "Get AI-generated ideas for your next video",
-    },
-    {
-      icon: <TrendingUp className="w-8 h-8 mb-4 text-green-500" />,
-      title: "Audience Engagement",
-      description: "Understand and grow your viewer base",
+      icon: <UserCircle className="w-10 h-10 mb-4 text-yellow-500" />,
+      title: "Account Settings",
+      description:
+        "Manage your account details, view your channel information, and handle logout functionality.",
+      path: "/account",
+      buttonText: "Manage Account",
     },
   ];
 
+  if (!isAuthenticated) {
+    navigate("/login");
+    return null;
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-      <main className="container mx-auto px-4 py-12">
-        <section className="text-center mb-16">
-          <h1 className="text-5xl font-bold text-gray-900 mb-6">
+    <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200">
+      <main className="container mx-auto px-6 py-16">
+        {/* Hero Section */}
+        <section className="text-center mb-20">
+          <img
+            src="/logobg.png"
+            alt="InsightFlow Logo"
+            className="mx-auto w-28 h-auto mb-6"
+          />
+          <h1 className="text-6xl font-extrabold text-gray-900 mb-4">
             Welcome to <span className="text-blue-600">InsightFlow</span>
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Revolutionize your YouTube experience with AI-powered insights and
-            analytics. Unlock the potential of your content and audience with
-            cutting-edge technology.
+            Your YouTube analytics and AI insights platform. Explore our
+            features:
           </p>
         </section>
 
-        <section className="mb-20">
-          <h2 className="text-3xl font-semibold text-gray-800 mb-10 text-center">
-            Empower Your Content Creation
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => (
-              <div
-                key={index}
-                className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
-              >
-                <div className="flex flex-col items-center text-center">
-                  {feature.icon}
-                  <h3 className="text-xl font-semibold mb-2">
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-600">{feature.description}</p>
+        {/* Quick Start */}
+        <section className="mt-20 text-center">
+          <h2 className="text-3xl font-bold mb-6">Ready to Start?</h2>
+          <p className="text-gray-600 mb-10">
+            Begin by viewing your videos or analyzing a specific video ID.
+          </p>
+          <div className="flex gap-6 justify-center">
+            <Button
+              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-lg"
+              onClick={() => navigate("/videos")}
+            >
+              View My Videos
+            </Button>
+            <Button
+              className="px-6 py-3 bg-green-600 hover:bg-green-700 text-lg"
+              onClick={() => navigate("/videoById")}
+            >
+              Analyze by ID
+            </Button>
+          </div>
+        </section>
+
+        {/* Pages Guide */}
+        <section className="grid gap-8 mt-12 md:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto">
+          {pages.map((page, index) => (
+            <div
+              key={index}
+              className="bg-white rounded-lg p-8 shadow-lg hover:shadow-xl transition-shadow duration-300"
+            >
+              <div className="flex items-start gap-6">
+                <div className="flex-shrink-0">{page.icon}</div>
+                <div className="flex-grow">
+                  <h3 className="text-2xl font-semibold mb-2">{page.title}</h3>
+                  <p className="text-gray-600 mb-4 leading-relaxed">
+                    {page.description}
+                  </p>
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700"
+                    onClick={() => navigate(page.path)}
+                  >
+                    {page.buttonText}
+                  </Button>
                 </div>
               </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="text-center bg-blue-600 text-white py-16 rounded-lg shadow-xl">
-          <h2 className="text-4xl font-bold mb-6">
-            Ready to Transform Your YouTube Strategy?
-          </h2>
-          <p className="text-xl mb-8 max-w-2xl mx-auto">
-            Join a community of forward-thinking content creators and take your
-            channel to new heights with InsightFlow.
-          </p>
-          <div className="flex justify-center space-x-4">
-            <Button
-              size="lg"
-              className="bg-white text-blue-600 hover:bg-gray-100"
-              onClick={() => navigate(`/account`)}
-            >
-              Get Started
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="bg-transparent border-white text-white hover:bg-white hover:text-blue-600"
-              onClick={() => navigate(`/videos`)}
-            >
-              Explore Videos
-            </Button>
-          </div>
+            </div>
+          ))}
         </section>
       </main>
     </div>

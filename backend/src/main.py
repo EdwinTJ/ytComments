@@ -126,12 +126,8 @@ async def auth_callback(code: str, db: Session = Depends(get_db)):
     channel_id = channel_response["items"][0]["id"]
     user = await get_user_by_email(db, email)
     if user:
-        print(f"user exists \n")
         user = await update_user_token(db, user, credentials.token, credentials.expiry)
-        print(user)
-        print(f"\n")
     else:
-        print(f"user data else \n")
         user_data = UserData(
             name=name,
             email=email,

@@ -28,48 +28,50 @@ export default function VideoById() {
   };
 
   return (
-    <section className="flex flex-col items-center p-8">
-      <h1 className="text-2xl font-bold mb-4">AI Summary for Video ID</h1>
+    <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200">
+      <section className="flex flex-col items-center p-8">
+        <h1 className="text-2xl font-bold mb-4">AI Summary for Video ID</h1>
 
-      <Input
-        type="text"
-        placeholder="Enter Video ID"
-        className="w-full max-w-2xl mb-4 p-2 border border-gray-300 rounded"
-        value={videoId}
-        onChange={(e) => setVideoId(e.target.value)}
-        required
-      />
+        <Input
+          type="text"
+          placeholder="Enter Video ID"
+          className="w-full max-w-2xl mb-4 p-2 border border-gray-300 rounded"
+          value={videoId}
+          onChange={(e) => setVideoId(e.target.value)}
+          required
+        />
 
-      <Textarea
-        placeholder="What do you want to know about the comments of this video?"
-        className="w-full max-w-2xl mb-4"
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-      />
+        <Textarea
+          placeholder="What do you want to know about the comments of this video?"
+          className="w-full max-w-2xl mb-4"
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+        />
 
-      <Button
-        className="bg-blue-500 text-white"
-        onClick={handleSubmit}
-        disabled={isLoading}
-      >
-        {isLoading ? "Processing..." : "Get Summary"}
-      </Button>
+        <Button
+          className="bg-blue-500 text-white"
+          onClick={handleSubmit}
+          disabled={isLoading}
+        >
+          {isLoading ? "Processing..." : "Get Summary"}
+        </Button>
 
-      {error && <p className="text-red-500 mt-4">{error}</p>}
+        {error && <p className="text-red-500 mt-4">{error}</p>}
 
-      {summary && (
-        <div className="w-full max-w-2xl mt-6 p-4 border border-gray-300 rounded">
-          <h2 className="text-xl font-semibold mb-2">Summary</h2>
-          <p className="text-gray-700">{summary}</p>
-        </div>
-      )}
+        {summary && (
+          <div className="w-full max-w-2xl mt-6 p-4 border border-gray-300 rounded">
+            <h2 className="text-xl font-semibold mb-2">Summary</h2>
+            <p className="text-gray-700">{summary}</p>
+          </div>
+        )}
 
-      <Button
-        className="bg-gray-500 text-white mt-4"
-        onClick={() => navigate("/videos")}
-      >
-        Back to Videos
-      </Button>
-    </section>
+        <Button
+          className="bg-gray-500 text-white mt-4"
+          onClick={() => navigate("/videos")}
+        >
+          Back to Videos
+        </Button>
+      </section>
+    </div>
   );
 }

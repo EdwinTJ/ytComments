@@ -4,12 +4,8 @@ from src.config import ( YOUTUBE_API_KEY, YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_
 
 def get_channel_videos(channel_id):
     youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, developerKey=YOUTUBE_API_KEY)
-    print(f"cAHNNEL ID INSIDE videos \n")
-    print(channel_id)
-    print(f"\n")
     try:
         # Fetch the videos from the channel
-        print("Fetch the videos from the channel \n")
         response = youtube.search().list(
             channelId=channel_id,
             type='video',
@@ -17,9 +13,6 @@ def get_channel_videos(channel_id):
             maxResults=50,
             order='date'
         ).execute()
-        print(f"response \n")
-        print(response)
-        print(f"\n")
         # Parse the response and return videos
         videos = []
         for item in response.get('items', []):
@@ -30,9 +23,6 @@ def get_channel_videos(channel_id):
                 'description': item['snippet']['description']
             }
             videos.append(video_data)
-        print(f"Videos inside function \n")
-        print(videos)
-        print(f"\n")
         return videos
     except HttpError as e:
         print(f"An HTTP error {e.resp.status} occurred: {e.content}")

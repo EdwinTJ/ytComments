@@ -33,7 +33,7 @@ const Account = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 p-8">
       <div className="max-w-4xl mx-auto space-y-12">
         <header className="text-center">
           <h1 className="text-3xl font-bold text-gray-900">
